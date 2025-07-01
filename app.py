@@ -3,22 +3,20 @@ from PIL import Image
 import io
 
 def resize_image(image, max_size=1600):
-    """Resize image so max dimension (width or height) is max_size, preserving aspect ratio."""
-    ratio = min(max_size / image.width, max_size / image.height, 1)  # never upscale
+    ratio = min(max_size / image.width, max_size / image.height, 1)
     new_width = int(image.width * ratio)
     new_height = int(image.height * ratio)
     return image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
 
 def add_logo_to_image(base_image, logo_image, logo_scale=0.2, position="bottom-right", margin=10):
     base = base_image.convert("RGBA")
     logo = logo_image.convert("RGBA")
 
-    # Resize logo
     logo_width = int(base.width * logo_scale)
     logo_height = int(logo.height * (logo_width / logo.width))
-    logo = logo.resize((logo_width, logo_height), Image.ANTIALIAS)
+    logo = logo.resize((logo_width, logo_height), Image.Resampling.LANCZOS)
 
-    # Determine position coordinates
     if position == "top-left":
         pos = (margin, margin)
     elif position == "top-right":
@@ -30,10 +28,11 @@ def add_logo_to_image(base_image, logo_image, logo_scale=0.2, position="bottom-r
     elif position == "center":
         pos = ((base.width - logo.width) // 2, (base.height - logo.height) // 2)
     else:
-        pos = (base.width - logo.width - margin, base.height - logo.height - margin)  # default bottom-right
+        pos = (base.width - logo.width - margin, base.height - logo.height - margin)
 
     base.paste(logo, pos, mask=logo)
-    return base.convert("RGB")  # for saving as JPEG
+    return base.convert("RGB")
+
 
 st.title("🖼️ Image Logo Overlay App with Custom Position & Resize")
 
