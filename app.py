@@ -16,7 +16,7 @@ def resize_and_crop(image, size=1600):
     cropped = resized.crop((left, top, right, bottom))
     return cropped
 
-def add_logo_to_image(base_image, logo_image, logo_scale=0.2, position="bottom-right", margin=10):
+def add_logo_to_image(base_image, logo_image, logo_scale=0.3, position="bottom-left", margin=10):
     base = base_image.convert("RGBA")
     logo = logo_image.convert("RGBA")
 
@@ -44,16 +44,16 @@ def add_ce_text(base_image, text="CE", text_scale=0.1, position="bottom-left", m
     base = base_image.convert("RGBA")
     draw = ImageDraw.Draw(base)
 
-    # Font size relative to image width
     font_size = int(base.width * text_scale)
 
     try:
         font = ImageFont.truetype("arial.ttf", font_size)
     except OSError:
-        # fallback font if arial.ttf not found
         font = ImageFont.load_default()
 
-    text_width, text_height = draw.textsize(text, font=font)
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
 
     if position == "top-left":
         pos = (margin, margin)
@@ -68,15 +68,13 @@ def add_ce_text(base_image, text="CE", text_scale=0.1, position="bottom-left", m
     else:
         pos = (margin, base.height - text_height - margin)
 
-    # Draw black outline for better visibility
     outline_range = max(1, font_size // 15)
-    for dx in range(-outline_range, outline_range+1):
-        for dy in range(-outline_range, outline_range+1):
+    for dx in range(-outline_range, outline_range + 1):
+        for dy in range(-outline_range, outline_range + 1):
             if dx != 0 or dy != 0:
-                draw.text((pos[0]+dx, pos[1]+dy), text, font=font, fill=(0,0,0,180))
+                draw.text((pos[0] + dx, pos[1] + dy), text, font=font, fill=(0, 0, 0, 180))
 
-    # Draw white semi-transparent text
-    draw.text(pos, text, font=font, fill=(255,255,255,200))
+    draw.text(pos, text, font=font, fill=(255, 255, 255, 200))
 
     return base
 
@@ -91,10 +89,11 @@ if uploaded_image and uploaded_logo:
 
     resized_image = resize_and_crop(image, size=1600)
 
+    # Logo options with defaults: bottom-left and 30%
     position = st.selectbox(
         "Select logo position",
         options=["top-left", "top-right", "bottom-left", "bottom-right", "center"],
-        index=3,
+        index=2,  # bottom-left default
     )
     st.markdown("**Best position:** bottom-left")
 
@@ -102,19 +101,19 @@ if uploaded_image and uploaded_logo:
         "Logo size (as % of image width)",
         min_value=5,
         max_value=50,
-        value=20,
+        value=30,  # default 30%
         step=1,
     ) / 100
     st.markdown("**Recommended logo size:** 30% of image width")
 
-    # Checkbox to add CE text
+    # CE text toggle and options
     add_ce = st.checkbox("Add CE text on the image")
 
     if add_ce:
         ce_position = st.selectbox(
             "Select CE text position",
             options=["top-left", "top-right", "bottom-left", "bottom-right", "center"],
-            index=2,
+            index=3,  # default bottom-right for CE text
             key="ce_pos",
         )
 
@@ -127,10 +126,8 @@ if uploaded_image and uploaded_logo:
             key="ce_scale",
         ) / 100
 
-    # Add logo
     result = add_logo_to_image(resized_image, logo, logo_scale=logo_scale, position=position)
 
-    # Add CE text if checked
     if add_ce:
         result = add_ce_text(result, text="CE", text_scale=ce_scale, position=ce_position)
 
