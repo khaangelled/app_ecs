@@ -44,7 +44,7 @@ def add_logo_to_image(base_image, logo_image, logo_scale=0.2, position="bottom-r
     base.paste(logo, pos, mask=logo)
     return base.convert("RGB")
 
-
+resized_image = resize_and_crop(image, size=1600)
 st.title("🖼️ Image Logo Overlay App with Custom Position & Resize")
 
 uploaded_image = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
@@ -85,4 +85,4 @@ if uploaded_image and uploaded_logo:
         file_name="image_with_logo.jpg",
         mime="image/jpeg"
     )
-resized_image = resize_and_crop(image, size=1600)
+
