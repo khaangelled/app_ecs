@@ -1,9 +1,8 @@
 import streamlit as st
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import io
 
 def resize_and_crop(image, size=1600):
-    """Resize image so smaller side >= size, then center-crop to size x size."""
     ratio = max(size / image.width, size / image.height)
     new_width = int(image.width * ratio)
     new_height = int(image.height * ratio)
@@ -21,12 +20,10 @@ def add_logo_to_image(base_image, logo_image, logo_scale=0.2, position="bottom-r
     base = base_image.convert("RGBA")
     logo = logo_image.convert("RGBA")
 
-    # Resize logo relative to base image width
     logo_width = int(base.width * logo_scale)
     logo_height = int(logo.height * (logo_width / logo.width))
     logo = logo.resize((logo_width, logo_height), Image.Resampling.LANCZOS)
 
-    # Calculate position
     if position == "top-left":
         pos = (margin, margin)
     elif position == "top-right":
@@ -40,9 +37,48 @@ def add_logo_to_image(base_image, logo_image, logo_scale=0.2, position="bottom-r
     else:
         pos = (base.width - logo.width - margin, base.height - logo.height - margin)
 
-    # Paste logo with transparency mask
     base.paste(logo, pos, mask=logo)
-    return base.convert("RGB")  # Convert to RGB for saving as JPG
+    return base
+
+def add_ce_text(base_image, text="CE", text_scale=0.1, position="bottom-left", margin=10):
+    base = base_image.convert("RGBA")
+    draw = ImageDraw.Draw(base)
+
+    # Font size relative to image width
+    font_size = int(base.width * text_scale)
+
+    try:
+        font = ImageFont.truetype("arial.ttf", font_size)
+    except OSError:
+        # fallback font if arial.ttf not found
+        font = ImageFont.load_default()
+
+    text_width, text_height = draw.textsize(text, font=font)
+
+    if position == "top-left":
+        pos = (margin, margin)
+    elif position == "top-right":
+        pos = (base.width - text_width - margin, margin)
+    elif position == "bottom-left":
+        pos = (margin, base.height - text_height - margin)
+    elif position == "bottom-right":
+        pos = (base.width - text_width - margin, base.height - text_height - margin)
+    elif position == "center":
+        pos = ((base.width - text_width) // 2, (base.height - text_height) // 2)
+    else:
+        pos = (margin, base.height - text_height - margin)
+
+    # Draw black outline for better visibility
+    outline_range = max(1, font_size // 15)
+    for dx in range(-outline_range, outline_range+1):
+        for dy in range(-outline_range, outline_range+1):
+            if dx != 0 or dy != 0:
+                draw.text((pos[0]+dx, pos[1]+dy), text, font=font, fill=(0,0,0,180))
+
+    # Draw white semi-transparent text
+    draw.text(pos, text, font=font, fill=(255,255,255,200))
+
+    return base
 
 st.title("🖼️ Image Logo Overlay App (Resize & Crop to 1600x1600)")
 
@@ -61,6 +97,7 @@ if uploaded_image and uploaded_logo:
         index=3,
     )
     st.markdown("**Best position:** bottom-left")
+
     logo_scale = st.slider(
         "Logo size (as % of image width)",
         min_value=5,
@@ -69,15 +106,39 @@ if uploaded_image and uploaded_logo:
         step=1,
     ) / 100
     st.markdown("**Recommended logo size:** 30% of image width")
+
+    # Checkbox to add CE text
+    add_ce = st.checkbox("Add CE text on the image")
+
+    if add_ce:
+        ce_position = st.selectbox(
+            "Select CE text position",
+            options=["top-left", "top-right", "bottom-left", "bottom-right", "center"],
+            index=2,
+            key="ce_pos",
+        )
+
+        ce_scale = st.slider(
+            "CE text size (as % of image width)",
+            min_value=5,
+            max_value=50,
+            value=10,
+            step=1,
+            key="ce_scale",
+        ) / 100
+
+    # Add logo
     result = add_logo_to_image(resized_image, logo, logo_scale=logo_scale, position=position)
+
+    # Add CE text if checked
+    if add_ce:
+        result = add_ce_text(result, text="CE", text_scale=ce_scale, position=ce_position)
 
     st.subheader("🔍 Preview:")
     st.image(result, use_container_width=True)
 
-
-    # Prepare image for download
     img_buffer = io.BytesIO()
-    result.save(img_buffer, format="JPEG")
+    result.convert("RGB").save(img_buffer, format="JPEG")
     img_buffer.seek(0)
 
     st.download_button(
