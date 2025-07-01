@@ -7,7 +7,7 @@ def resize_image(image, max_size=1600):
     ratio = min(max_size / image.width, max_size / image.height, 1)  # never upscale
     new_width = int(image.width * ratio)
     new_height = int(image.height * ratio)
-    return image.resize((new_width, new_height), Image.ANTIALIAS)
+    return image.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
 def add_logo_to_image(base_image, logo_image, logo_scale=0.2, position="bottom-right", margin=10):
     base = base_image.convert("RGBA")
