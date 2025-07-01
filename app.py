@@ -60,7 +60,7 @@ if uploaded_image and uploaded_logo:
         options=["top-left", "top-right", "bottom-left", "bottom-right", "center"],
         index=3,
     )
-
+    st.markdown("**Best position:** bottom-left")
     logo_scale = st.slider(
         "Logo size (as % of image width)",
         min_value=5,
@@ -68,7 +68,7 @@ if uploaded_image and uploaded_logo:
         value=20,
         step=1,
     ) / 100
-
+    st.markdown("**Recommended logo size:** 30% of image width")
     result = add_logo_to_image(resized_image, logo, logo_scale=logo_scale, position=position)
 
     st.subheader("🔍 Preview:")
