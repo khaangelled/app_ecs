@@ -72,7 +72,8 @@ if uploaded_image and uploaded_logo:
     result = add_logo_to_image(resized_image, logo, logo_scale=logo_scale, position=position)
 
     st.subheader("🔍 Preview:")
-    st.image(result, use_column_width=True)
+    st.image(result, use_container_width=True)
+
 
     # Prepare image for download
     img_buffer = io.BytesIO()
