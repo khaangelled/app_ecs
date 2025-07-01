@@ -2,11 +2,22 @@ import streamlit as st
 from PIL import Image
 import io
 
-def resize_image(image, max_size=1600):
-    ratio = min(max_size / image.width, max_size / image.height, 1)
+def resize_and_crop(image, size=1600):
+    # Resize image so smaller side >= size, keep aspect ratio
+    ratio = max(size / image.width, size / image.height)
     new_width = int(image.width * ratio)
     new_height = int(image.height * ratio)
-    return image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    resized = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+    # Now center-crop to size x size
+    left = (new_width - size) // 2
+    top = (new_height - size) // 2
+    right = left + size
+    bottom = top + size
+
+    cropped = resized.crop((left, top, right, bottom))
+    return cropped
+
 
 
 def add_logo_to_image(base_image, logo_image, logo_scale=0.2, position="bottom-right", margin=10):
@@ -74,3 +85,4 @@ if uploaded_image and uploaded_logo:
         file_name="image_with_logo.jpg",
         mime="image/jpeg"
     )
+resized_image = resize_and_crop(image, size=1600)
