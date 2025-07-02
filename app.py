@@ -1,6 +1,7 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import io
+import base64
 
 st.set_page_config(layout="wide")  # Use full browser width
 
@@ -82,18 +83,16 @@ def draw_split_line_with_text(image,
 
 st.title("🖼️ Image with Split Bottom Line and Side Texts (Preset Line Colors)")
 
-uploaded_image = st.file_uploader("Upload Base Image (jpg/png)", type=["jpg", "jpeg", "png"])
-
 with st.sidebar:
     st.header("Options")
 
     use_logo1 = st.checkbox("Activate Logo: Made in Germany", value=True)
     use_logo2 = st.checkbox("Activate Logo: DHL Logo", value=True)
-    use_logo3 = st.checkbox("Activate Logo: ECS Logo", value=True)  # NEW ECS logo checkbox
+    use_logo_ecs = st.checkbox("Activate Logo: ECS Logo", value=False)
 
     logo1 = None
     logo2 = None
-    logo3 = None
+    logo_ecs = None
     if use_logo1:
         try:
             logo1 = Image.open("made_in_germany.png")
@@ -104,18 +103,16 @@ with st.sidebar:
             logo2 = Image.open("dhl.png")
         except FileNotFoundError:
             st.error("Logo 'dhl.png' not found.")
-    if use_logo3:
+    if use_logo_ecs:
         try:
-            logo3 = Image.open("ECS.png")  # ECS logo loaded
+            logo_ecs = Image.open("ECS.png")
         except FileNotFoundError:
             st.error("Logo 'ECS.png' not found.")
 
-    logos_to_add = []
-    if logo1 is not None:
-        logos_to_add.append(logo1)
-    if logo2 is not None:
-        logos_to_add.append(logo2)
-
+    # logos_to_add except ECS keep original logo_position
+    # ECS logo always bottom-left above line, so add separately if active
+    logos_main = [logo for logo in [logo1, logo2] if logo is not None]
+    
     logo_position = st.selectbox("Logo Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
     logo_scale = st.slider("Logo Size %", 5, 50, 20)
 
@@ -144,10 +141,11 @@ with st.sidebar:
 
     line_height_pct = st.slider("Bottom Line Height %", 5, 30, 7) / 100
 
-# Layout: three columns - left for options, middle for uploader + messages, right for preview
 col1, col2 = st.columns([1, 2])
 
 with col1:
+    uploaded_image = st.file_uploader("Upload Base Image (jpg/png)", type=["jpg", "jpeg", "png"])
+
     if uploaded_image:
         image = Image.open(uploaded_image)
         if image.width != image.height:
@@ -155,6 +153,8 @@ with col1:
                 "⚠️ Image is not square (1:1 ratio). It will be center-cropped automatically to 1600×1600 pixels."
                 " Or crop manually here: https://iloveimg.app/crop-image"
             )
+    else:
+        st.info("Please upload a base image to get started.")
 
 with col2:
     if uploaded_image:
@@ -163,18 +163,14 @@ with col2:
         line_height_px = int(resized_image.height * line_height_pct)
         top_margin_in_line = 10
 
-        # Add Made in Germany and DHL logos at chosen position
-        result = add_logos_to_image(resized_image, logos_to_add, logo_scale=logo_scale/100, position=logo_position, margin=20, line_height_px=line_height_px)
-
-        # Add ECS logo separately at bottom-left if active
-        if logo3 is not None:
-            ecs_scaled_w = int(resized_image.width * (logo_scale / 100))
-            ecs_scaled_h = int(logo3.height * (ecs_scaled_w / logo3.width))
-            ecs_logo_resized = logo3.resize((ecs_scaled_w, ecs_scaled_h), Image.Resampling.LANCZOS)
-            x_ecs = 20
-            y_ecs = resized_image.height - line_height_px - ecs_logo_resized.height - 20
-            result.paste(ecs_logo_resized, (x_ecs, y_ecs), mask=ecs_logo_resized)
-
+        # Add main logos at chosen position
+        result = add_logos_to_image(resized_image, logos_main, logo_scale=logo_scale/100, position=logo_position, margin=20, line_height_px=line_height_px)
+        
+        # Add ECS logo separately at bottom-left always above line
+        if logo_ecs:
+            result = add_logos_to_image(result, [logo_ecs], logo_scale=logo_scale/100, position="bottom-left", margin=20, line_height_px=line_height_px)
+        
+        # Draw bottom split line with texts
         result = draw_split_line_with_text(
             result,
             left_text=left_text,
@@ -192,13 +188,29 @@ with col2:
             is_bold_right=right_bold,
         )
 
-        st.markdown("## Preview")
-        st.image(result, use_container_width=True)
-
         buf = io.BytesIO()
-        result.convert("RGB").save(buf, format="JPEG")
+        result.save(buf, format="PNG")
         buf.seek(0)
-        st.download_button("💾 Download Image", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
+        img_bytes = buf.read()
+        img_b64 = base64.b64encode(img_bytes).decode()
 
-    else:
-        st.info("Please upload a base image to get started.")
+        st.markdown("## Preview")
+
+        st.markdown(
+            f"""
+            <div style="text-align:center;">
+                <img
+                    src="data:image/png;base64,{img_b64}"
+                    style="max-width:40%; height:auto; cursor:pointer;"
+                    onclick="window.open(this.src)"
+                    alt="Preview Image"
+                />
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        buf2 = io.BytesIO()
+        result.convert("RGB").save(buf2, format="JPEG")
+        buf2.seek(0)
+        st.download_button("💾 Download Image", data=buf2, file_name="image_with_text.jpg", mime="image/jpeg")
