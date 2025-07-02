@@ -83,8 +83,6 @@ def draw_split_line_with_text(image,
 
 st.title("🖼️ Image with Split Bottom Line and Side Texts (Preset Line Colors)")
 
-uploaded_image = st.file_uploader("Upload Base Image (jpg/png)", type=["jpg", "jpeg", "png"])
-
 with st.sidebar:
     st.header("Options")
 
@@ -134,10 +132,12 @@ with st.sidebar:
 
     line_height_pct = st.slider("Bottom Line Height %", 5, 30, 7) / 100
 
-# Layout: two columns (options in sidebar, left for messages, right for preview)
+
 col1, col2 = st.columns([1, 2])
 
 with col1:
+    uploaded_image = st.file_uploader("Upload Base Image (jpg/png)", type=["jpg", "jpeg", "png"])
+
     if uploaded_image:
         image = Image.open(uploaded_image)
         if image.width != image.height:
@@ -173,7 +173,6 @@ with col2:
             is_bold_right=right_bold,
         )
 
-        # Encode image as base64 for custom img tag
         buf = io.BytesIO()
         result.save(buf, format="PNG")
         buf.seek(0)
@@ -182,14 +181,13 @@ with col2:
 
         st.markdown("## Preview")
 
-        # Show image at max-width 40% and clickable to open full-size
         st.markdown(
             f"""
-            <div id="preview-container" style="text-align:center;">
-                <img 
-                    src="data:image/png;base64,{img_b64}" 
-                    style="max-width:70%; height:auto; cursor:pointer;" 
-                    onclick="window.open(this.src)" 
+            <div style="text-align:center;">
+                <img
+                    src="data:image/png;base64,{img_b64}"
+                    style="max-width:40%; height:auto; cursor:pointer;"
+                    onclick="window.open(this.src)"
                     alt="Preview Image"
                 />
             </div>
@@ -197,9 +195,7 @@ with col2:
             unsafe_allow_html=True,
         )
 
-        # Download button
         buf2 = io.BytesIO()
         result.convert("RGB").save(buf2, format="JPEG")
         buf2.seek(0)
         st.download_button("💾 Download Image", data=buf2, file_name="image_with_text.jpg", mime="image/jpeg")
-
