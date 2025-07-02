@@ -134,7 +134,7 @@ if uploaded_image and uploaded_logo:
         "Red & Yellow": ("#d62828", "#fcbf49"),
         "Yellow & Beige": ("#ffc300", "#ede0d4"),
         "Teal Blues": ("#264653", "#2a9d8f"),
-        "Purple & Pink": ("#8338ec", "#ff6f91"),
+        "Green & Geige": ("#52796f", "#a68a64"),
     }
 
     preset_name = st.selectbox("Choose bottom line color preset", list(color_presets.keys()))
