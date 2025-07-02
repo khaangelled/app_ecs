@@ -151,32 +151,24 @@ with col1:
 
 # Right column for preview and download
 with col3:
+   with col3:
     if uploaded_image and image:
-        resized_image = resize_and_crop(image, 1600)
+        # ... image processing ...
 
-        line_height_px = int(resized_image.height * line_height_pct)
-        top_margin_in_line = 10
+        st.markdown("## Preview")
+        st.image(result, width=400)  # Fixed width (adjust as needed)
 
-        result = add_logos_to_image(
-            resized_image, logos_to_add, logo_scale=logo_scale / 100, position=logo_position,
-            margin=20, line_height_px=line_height_px
+        buf = io.BytesIO()
+        result.convert("RGB").save(buf, format="JPEG")
+        buf.seek(0)
+        st.download_button(
+            "💾 Download Image",
+            data=buf,
+            file_name="image_with_text.jpg",
+            mime="image/jpeg"
         )
-        result = draw_split_line_with_text(
-            result,
-            left_text=left_text,
-            right_text=right_text,
-            left_font_size=left_font_size,
-            right_font_size=right_font_size,
-            left_text_color=left_text_color,
-            right_text_color=right_text_color,
-            left_bg_color=left_bg_color,
-            right_bg_color=right_bg_color,
-            line_height_pct=line_height_pct,
-            margin=20,
-            top_margin_in_line=top_margin_in_line,
-            is_bold_left=left_bold,
-            is_bold_right=right_bold,
-        )
+
+
 
         st.markdown("## Preview")
         st.image(result, use_container_width=True)
