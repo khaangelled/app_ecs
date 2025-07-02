@@ -160,35 +160,53 @@ with col2:
         st.info("Please upload a base image to get started.")
 
 with col3:
-    if uploaded_image:
-        resized_image = resize_and_crop(image, 1600)
+  if uploaded_image:
+    resized_image = resize_and_crop(image, 1600)
 
-        line_height_px = int(resized_image.height * line_height_pct)
-        top_margin_in_line = 10
+    line_height_px = int(resized_image.height * line_height_pct)
+    top_margin_in_line = 10
 
-        result = add_logos_to_image(resized_image, logos_to_add, logo_scale=logo_scale/100, position=logo_position, margin=20, line_height_px=line_height_px)
-        result = draw_split_line_with_text(
-            result,
-            left_text=left_text,
-            right_text=right_text,
-            left_font_size=left_font_size,
-            right_font_size=right_font_size,
-            left_text_color=left_text_color,
-            right_text_color=right_text_color,
-            left_bg_color=left_bg_color,
-            right_bg_color=right_bg_color,
-            line_height_pct=line_height_pct,
-            margin=20,
-            top_margin_in_line=top_margin_in_line,
-            is_bold_left=left_bold,
-            is_bold_right=right_bold,
-        )
+    result = add_logos_to_image(
+        resized_image, logos_to_add, logo_scale=logo_scale/100, position=logo_position,
+        margin=20, line_height_px=line_height_px
+    )
+    result = draw_split_line_with_text(
+        result,
+        left_text=left_text,
+        right_text=right_text,
+        left_font_size=left_font_size,
+        right_font_size=right_font_size,
+        left_text_color=left_text_color,
+        right_text_color=right_text_color,
+        left_bg_color=left_bg_color,
+        right_bg_color=right_bg_color,
+        line_height_pct=line_height_pct,
+        margin=20,
+        top_margin_in_line=top_margin_in_line,
+        is_bold_left=left_bold,
+        is_bold_right=right_bold,
+    )
 
-st.markdown("## Preview")
-st.image(result, use_container_width=True)
+    st.markdown("## Preview")
 
-    with col3:  
+    col1, col2, col3 = st.columns([3, 4, 3])
+
+    with col1:
+        # You can put your options or upload widget here if needed
+        pass
+
+    with col2:
+        st.image(result, use_container_width=True)
+
+    with col3:
         buf = io.BytesIO()
         result.convert("RGB").save(buf, format="JPEG")
         buf.seek(0)
-        st.download_button("💾 Download Image", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
+        st.download_button(
+            "💾 Download Image",
+            data=buf,
+            file_name="image_with_text.jpg",
+            mime="image/jpeg"
+        )
+else:
+    st.info("Please upload a base image to get started.")
