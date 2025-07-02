@@ -184,8 +184,9 @@ with col3:
             is_bold_right=right_bold,
         )
 
-        st.markdown("## Preview")
-        st.image(result, use_column_width=True)
+st.markdown("## Preview")
+st.image(result, use_container_width=True)
+
 
         buf = io.BytesIO()
         result.convert("RGB").save(buf, format="JPEG")
