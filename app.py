@@ -45,12 +45,11 @@ def add_logos_to_image(base_image, logos, logo_scale=0.3, position="top-left", m
 
     y = y_start
     for logo in logo_imgs:
-        logo = logo.convert("RGBA")  # <--- Ensure alpha channel for mask
+        logo = logo.convert("RGBA")  # Ensure alpha channel for mask
         base.paste(logo, (x_pos, y), mask=logo)
         y += logo.height + margin
 
     return base
-
 
 def draw_split_line_with_text(image,
                               left_text, right_text,
@@ -135,6 +134,14 @@ logos_to_add = [logo for logo in [logo1, logo2] if logo is not None]
 
 if uploaded_image:
     image = Image.open(uploaded_image)
+
+    # Check if image is square and warn user if not
+    if image.width != image.height:
+        st.markdown(
+            "<h2 style='color:red;'>⚠️ Warning: Your image is not square (1:1 ratio). It will be center-cropped automatically to 1600×1600 pixels.</h2>",
+            unsafe_allow_html=True
+        )
+
     resized_image = resize_and_crop(image, 1600)
 
     # Logo options
