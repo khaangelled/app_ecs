@@ -2,22 +2,16 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import io
 
-def manual_crop(image, size=1600, x_offset=0, y_offset=0):
-    # Resize image first so that smallest side is at least size
+def resize_and_crop_manual(image, size=1600, x_offset=0, y_offset=0):
     ratio = max(size / image.width, size / image.height)
     new_width = int(image.width * ratio)
     new_height = int(image.height * ratio)
     resized = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-    # Clamp offsets so crop box stays inside resized image
-max_x = max(new_width - crop_size, 0)
-max_y = max(new_height - crop_size, 0)
-
-x_offset = st.slider("Horizontal crop offset (X)", 0, max_x, max_x // 2 if max_x > 0 else 0)
-y_offset = st.slider("Vertical crop offset (Y)", 0, max_y, max_y // 2 if max_y > 0 else 0)
-
+    # Crop using offsets
     cropped = resized.crop((x_offset, y_offset, x_offset + size, y_offset + size))
     return cropped
+
 
 def add_logos_to_image(base_image, logos, logo_scale=0.3, position="top-left", margin=20, line_height_px=0):
     base = base_image.convert("RGBA")
