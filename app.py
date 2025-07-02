@@ -122,8 +122,8 @@ uploaded_image = st.file_uploader("(jpg/png)", type=["jpg", "jpeg", "png"])
 st.markdown("<h2 style='font-weight:bold; font-size:24px;'>Activate or deactivate logos below:</h2>", unsafe_allow_html=True)
 
 # Load logos from local folder and toggle activation
-use_logo1 = st.checkbox("Activate Logo: made_in_germany.png", value=True)
-use_logo2 = st.checkbox("Activate Logo: dhl.png", value=True)
+use_logo1 = st.checkbox("Activate Logo: Made in Germany", value=True)
+use_logo2 = st.checkbox("Activate Logo: DHL Logo", value=True)
 
 logo1 = None
 logo2 = None
