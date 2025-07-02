@@ -2,7 +2,7 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import io
 
-st.set_page_config(layout="wide")  # Make full width
+st.set_page_config(layout="wide")  # Use full browser width
 
 def resize_and_crop(image, size=1600):
     ratio = max(size / image.width, size / image.height)
@@ -40,7 +40,7 @@ def add_logos_to_image(base_image, logos, logo_scale=0.3, position="top-left", m
         x_pos = (base.width - max(logo.width for logo in logo_imgs)) // 2
     y = y_start
     for logo in logo_imgs:
-        logo = logo.convert("RGBA")  # Ensure alpha channel for mask
+        logo = logo.convert("RGBA")
         base.paste(logo, (x_pos, y), mask=logo)
         y += logo.height + margin
     return base
@@ -82,97 +82,70 @@ def draw_split_line_with_text(image,
 
 st.title("🖼️ Image with Split Bottom Line and Side Texts (Preset Line Colors)")
 
-# Upload base image
 uploaded_image = st.file_uploader("Upload Base Image (jpg/png)", type=["jpg", "jpeg", "png"])
 
-# Logo activation checkboxes side by side
-col1, col2 = st.columns(2)
-with col1:
+# Put all controls in a sidebar or a narrow container
+with st.sidebar:
+    st.header("Options")
+
     use_logo1 = st.checkbox("Activate Logo: Made in Germany", value=True)
-with col2:
     use_logo2 = st.checkbox("Activate Logo: DHL Logo", value=True)
 
-logo1 = None
-logo2 = None
-if use_logo1:
-    try:
-        logo1 = Image.open("made_in_germany.png")
-    except FileNotFoundError:
-        st.error("Logo 'made_in_germany.png' not found in the app folder.")
-if use_logo2:
-    try:
-        logo2 = Image.open("dhl.png")
-    except FileNotFoundError:
-        st.error("Logo 'dhl.png' not found in the app folder.")
+    logo1 = None
+    logo2 = None
+    if use_logo1:
+        try:
+            logo1 = Image.open("made_in_germany.png")
+        except FileNotFoundError:
+            st.error("Logo 'made_in_germany.png' not found.")
+    if use_logo2:
+        try:
+            logo2 = Image.open("dhl.png")
+        except FileNotFoundError:
+            st.error("Logo 'dhl.png' not found.")
 
-logos_to_add = [logo for logo in [logo1, logo2] if logo is not None]
+    logos_to_add = [logo for logo in [logo1, logo2] if logo is not None]
 
-if uploaded_image:
-    image = Image.open(uploaded_image)
+    logo_position = st.selectbox("Logo Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
+    logo_scale = st.slider("Logo Size %", 5, 50, 20)
 
-    if image.width != image.height:
-        st.markdown(
-            "<h3 style='color:red; margin-bottom: 0;'>⚠️ Warning: Image is not square (1:1 ratio).</h3>"
-            "<p style='margin-top: 0;'>It will be center-cropped automatically to 1600×1600 pixels.<br>"
-            "Or use <a href='https://iloveimg.app/crop-image' target='_blank'>this site</a> to crop it manually.</p>",
-            unsafe_allow_html=True
-        )
+    left_text = st.text_input("Left Text (left half)", "Awesome Product")
+    right_text = st.text_input("Right Text (right half)", "Details or subtitle here")
 
-    resized_image = resize_and_crop(image, 1600)
+    left_text_color = st.color_picker("Left Text Color", "#FFFFFF")
+    right_text_color = st.color_picker("Right Text Color", "#FFFFFF")
 
-    # Put logo position and logo scale in one row
-    col1, col2, col3 = st.columns([3,3,6])
-    with col1:
-        logo_position = st.selectbox("Logo Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
-    with col2:
-        logo_scale = st.slider("Logo Size %", 5, 50, 20)
-
-    # Bottom line texts side by side
-    col1, col2 = st.columns(2)
-    with col1:
-        left_text = st.text_input("Left Text (left half)", "Awesome Product")
-    with col2:
-        right_text = st.text_input("Right Text (right half)", "Details or subtitle here")
-
-    # Text colors side by side
-    col1, col2 = st.columns(2)
-    with col1:
-        left_text_color = st.color_picker("Left Text Color", "#FFFFFF")
-    with col2:
-        right_text_color = st.color_picker("Right Text Color", "#FFFFFF")
-
-    # Line color preset & font sizes in 3 columns
-    col1, col2, col3 = st.columns([4, 3, 3])
     color_presets = {
-        "Green & Geige": ("#52796f", "#a68a64"),
+        "Green & Beige": ("#52796f", "#a68a64"),
         "Red & Yellow": ("#d62828", "#fcbf49"),
         "Yellow & Beige": ("#ffc300", "#ede0d4"),
         "Teal Blues": ("#264653", "#2a9d8f"),
         "Olive & Cream": ("#606c38", "#fefae0"),
     }
-    with col1:
-        preset_name = st.selectbox("Bottom Line Color Preset", list(color_presets.keys()))
-    with col2:
-        left_font_size = st.slider("Left Font Size (px)", 10, 200, 60)
-    with col3:
-        right_font_size = st.slider("Right Font Size (px)", 10, 200, 50)
+    preset_name = st.selectbox("Bottom Line Color Preset", list(color_presets.keys()))
 
     left_bg_color, right_bg_color = color_presets[preset_name]
 
-    # Bold options and line height in 3 columns
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        left_bold = st.checkbox("Bold Left Text", value=True)
-    with col2:
-        right_bold = st.checkbox("Bold Right Text", value=False)
-    with col3:
-        line_height_pct = st.slider("Bottom Line Height %", 5, 30, 7)
+    left_bold = st.checkbox("Bold Left Text", value=True)
+    right_bold = st.checkbox("Bold Right Text", value=False)
 
-    line_height_pct /= 100
+    left_font_size = st.slider("Left Font Size (px)", 10, 200, 60)
+    right_font_size = st.slider("Right Font Size (px)", 10, 200, 50)
+
+    line_height_pct = st.slider("Bottom Line Height %", 5, 30, 7) / 100
+
+if uploaded_image:
+    image = Image.open(uploaded_image)
+    if image.width != image.height:
+        st.warning(
+            "⚠️ Image is not square (1:1 ratio). It will be center-cropped automatically to 1600×1600 pixels."
+            " Or crop manually here: https://iloveimg.app/crop-image"
+        )
+    resized_image = resize_and_crop(image, 1600)
+
     line_height_px = int(resized_image.height * line_height_pct)
-    top_margin_in_line = 10  # px
+    top_margin_in_line = 10
 
-    # Add logos and text line
     result = add_logos_to_image(resized_image, logos_to_add, logo_scale=logo_scale/100, position=logo_position, margin=20, line_height_px=line_height_px)
     result = draw_split_line_with_text(
         result,
@@ -191,8 +164,8 @@ if uploaded_image:
         is_bold_right=right_bold,
     )
 
-    st.markdown("### Preview")
-    st.image(result, use_container_width=True)
+    st.markdown("## Preview")
+    st.image(result, use_column_width=True)
 
     buf = io.BytesIO()
     result.convert("RGB").save(buf, format="JPEG")
