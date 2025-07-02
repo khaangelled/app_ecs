@@ -1,6 +1,7 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import io
+import base64
 
 st.set_page_config(layout="wide")  # Use full browser width
 
@@ -133,7 +134,7 @@ with st.sidebar:
 
     line_height_pct = st.slider("Bottom Line Height %", 5, 30, 7) / 100
 
-# Layout: three columns - left for options, middle for uploader + messages, right for preview
+# Layout: two columns (options in sidebar, left for messages, right for preview)
 col1, col2 = st.columns([1, 2])
 
 with col1:
@@ -144,6 +145,8 @@ with col1:
                 "⚠️ Image is not square (1:1 ratio). It will be center-cropped automatically to 1600×1600 pixels."
                 " Or crop manually here: https://iloveimg.app/crop-image"
             )
+    else:
+        st.info("Please upload a base image to get started.")
 
 with col2:
     if uploaded_image:
@@ -170,29 +173,33 @@ with col2:
             is_bold_right=right_bold,
         )
 
-        # Add CSS to limit preview image width to 40% (relative)
-        st.markdown(
-            """
-            <style>
-            .stImage > img {
-                max-width: 5% !important;
+        # Encode image as base64 for custom img tag
+        buf = io.BytesIO()
+        result.save(buf, format="PNG")
+        buf.seek(0)
+        img_bytes = buf.read()
+        img_b64 = base64.b64encode(img_bytes).decode()
 
-                display: block;
-                margin-left: auto;
-                margin-right: auto;
-            }
-            </style>
+        st.markdown("## Preview")
+
+        # Show image at max-width 40% and clickable to open full-size
+        st.markdown(
+            f"""
+            <div id="preview-container" style="text-align:center;">
+                <img 
+                    src="data:image/png;base64,{img_b64}" 
+                    style="max-width:40%; height:auto; cursor:pointer;" 
+                    onclick="window.open(this.src)" 
+                    alt="Preview Image"
+                />
+            </div>
             """,
             unsafe_allow_html=True,
         )
 
-        st.markdown("## Preview")
-        st.image(result)  # full size image passed here
+        # Download button
+        buf2 = io.BytesIO()
+        result.convert("RGB").save(buf2, format="JPEG")
+        buf2.seek(0)
+        st.download_button("💾 Download Image", data=buf2, file_name="image_with_text.jpg", mime="image/jpeg")
 
-        buf = io.BytesIO()
-        result.convert("RGB").save(buf, format="JPEG")
-        buf.seek(0)
-        st.download_button("💾 Download Image", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
-
-    else:
-        st.info("Please upload a base image to get started.")
