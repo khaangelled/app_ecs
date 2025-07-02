@@ -104,7 +104,7 @@ def draw_split_line_with_text(image,
     return image
 
 # Streamlit UI
-st.title("🖼️ Image with Split Bottom Line and Side Texts (Text fixed 10px from top)")
+st.title("🖼️ Image with Split Bottom Line and Side Texts (Preset Line Colors)")
 
 uploaded_image = st.file_uploader("Upload base image (jpg/png)", type=["jpg","jpeg","png"])
 uploaded_logo = st.file_uploader("Upload logo image (PNG with transparency)", type=["png"])
@@ -128,21 +128,28 @@ if uploaded_image and uploaded_logo:
     left_text_color = st.color_picker("Left Text Color", "#FFFFFF")
     right_text_color = st.color_picker("Right Text Color", "#FFFFFF")
 
-    left_bg_color = st.color_picker("Left Line Background Color", "#0033cc")
-    right_bg_color = st.color_picker("Right Line Background Color", "#cc3300")
+    # Preset line color options (name, (left_bg, right_bg))
+    color_presets = {
+        "Olive & Cream": ("#606c38", "#fefae0"),
+        "Red & Yellow": ("#d62828", "#fcbf49"),
+        "Yellow & Beige": ("#ffc300", "#ede0d4"),
+        "Teal Blues": ("#264653", "#2a9d8f"),
+        "Purple & Pink": ("#8338ec", "#ff6f91"),
+    }
+
+    preset_name = st.selectbox("Choose bottom line color preset", list(color_presets.keys()))
+
+    left_bg_color, right_bg_color = color_presets[preset_name]
 
     left_bold = st.checkbox("Bold Left Text", value=True)
     right_bold = st.checkbox("Bold Right Text", value=False)
 
-    # Font size in pixels
     left_font_size = st.slider("Left Font Size (px)", min_value=10, max_value=200, value=60)
-    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=50)
+    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=48)
 
-    # Default line height is 20%
-    line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 7) / 100
+    line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 20) / 100
 
-    # Fixed 10 px margin from top of line for text vertical position:
-    top_margin_in_line = 10
+    top_margin_in_line = 10  # fixed 10 px from top of line for text
 
     result = draw_split_line_with_text(
         result,
