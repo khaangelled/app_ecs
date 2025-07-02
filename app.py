@@ -164,19 +164,17 @@ if uploaded_image:
         is_bold_right=right_bold,
     )
 
-st.markdown("## Preview")
+    st.markdown("## Preview")
 
-col1, col2, col3, col4 = st.columns([1, 3, 1, 5])  
-# 1 + 3 + 1 + 5 = 10 parts in total; col2 is 3/10 = 30% approx
+    col1, col2, col3, col4 = st.columns([1, 3, 1, 5])  
 
-with col2:
-    st.image(result, use_column_width=True)
+    with col2:
+        st.image(result, use_column_width=True)
 
-
-    buf = io.BytesIO()
-    result.convert("RGB").save(buf, format="JPEG")
-    buf.seek(0)
-    st.download_button("💾 Download Image", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
+        buf = io.BytesIO()
+        result.convert("RGB").save(buf, format="JPEG")
+        buf.seek(0)
+        st.download_button("💾 Download Image", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
 
 else:
     st.info("Please upload a base image to get started.")
