@@ -47,6 +47,7 @@ def draw_split_line_with_text(image,
                               left_bg_color, right_bg_color,
                               line_height_pct=0.15,
                               margin=20,
+                              top_margin_in_line=10,
                               is_bold_left=False,
                               is_bold_right=False):
     image = image.convert("RGBA")
@@ -75,15 +76,22 @@ def draw_split_line_with_text(image,
         left_font = ImageFont.load_default()
         right_font = ImageFont.load_default()
 
-    # Calculate vertical position for text (center vertically in line)
+    # Calculate vertical position for text: always y_start + top_margin_in_line
+    y_text_left = y_start + top_margin_in_line
+    y_text_right = y_start + top_margin_in_line
+
+    # Text bounding boxes (to check if text fits vertically)
     left_bbox = draw.textbbox((0, 0), left_text, font=left_font)
     left_text_height = left_bbox[3] - left_bbox[1]
 
     right_bbox = draw.textbbox((0, 0), right_text, font=right_font)
     right_text_height = right_bbox[3] - right_bbox[1]
 
-    y_text_left = y_start + (line_height - left_text_height) // 2
-    y_text_right = y_start + (line_height - right_text_height) // 2
+    # Warn if text might overflow line height (optional)
+    if left_text_height + top_margin_in_line > line_height:
+        st.warning(f"Left text height ({left_text_height}px) + top margin ({top_margin_in_line}px) exceeds line height ({line_height}px). Increase line height or reduce font size.")
+    if right_text_height + top_margin_in_line > line_height:
+        st.warning(f"Right text height ({right_text_height}px) + top margin ({top_margin_in_line}px) exceeds line height ({line_height}px). Increase line height or reduce font size.")
 
     # Text X positions:
     x_text_left = margin  # left text starts margin from left edge
@@ -95,8 +103,8 @@ def draw_split_line_with_text(image,
 
     return image
 
-# Streamlit app UI
-st.title("🖼️ Image with Split Bottom Line and Side Texts (Font size in px)")
+# Streamlit UI
+st.title("🖼️ Image with Split Bottom Line and Side Texts (Text fixed 10px from top)")
 
 uploaded_image = st.file_uploader("Upload base image (jpg/png)", type=["jpg","jpeg","png"])
 uploaded_logo = st.file_uploader("Upload logo image (PNG with transparency)", type=["png"])
@@ -128,10 +136,13 @@ if uploaded_image and uploaded_logo:
 
     # Font size in pixels
     left_font_size = st.slider("Left Font Size (px)", min_value=10, max_value=200, value=60)
-    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=40)
+    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=48)
 
     # Default line height is 20%
-    line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 9) / 100
+    line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 20) / 100
+
+    # Fixed 10 px margin from top of line for text vertical position:
+    top_margin_in_line = 10
 
     result = draw_split_line_with_text(
         result,
@@ -144,6 +155,8 @@ if uploaded_image and uploaded_logo:
         left_bg_color=left_bg_color,
         right_bg_color=right_bg_color,
         line_height_pct=line_height_pct,
+        margin=20,
+        top_margin_in_line=top_margin_in_line,
         is_bold_left=left_bold,
         is_bold_right=right_bold,
     )
