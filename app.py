@@ -20,30 +20,34 @@ def resize_and_crop(image, size=1600):
 def add_logos_to_image(base_image, logos, logo_scale=0.3, position="top-left", margin=20, line_height_px=0):
     base = base_image.convert("RGBA")
     logo_imgs = []
-    for logo in logos:
+    positions = []
+
+    for logo_info in logos:
+        logo, pos = logo_info
         logo_w = int(base.width * logo_scale)
         logo_h = int(logo.height * (logo_w / logo.width))
         resized_logo = logo.resize((logo_w, logo_h), Image.Resampling.LANCZOS)
         logo_imgs.append(resized_logo)
-    total_height = sum(logo.height for logo in logo_imgs) + margin * (len(logo_imgs) - 1)
-    if position in ["bottom-left", "bottom-right"]:
-        y_start = base.height - line_height_px - total_height - margin
-    elif position == "center":
-        y_start = (base.height - total_height) // 2
-    else:
-        y_start = margin
-    if position in ["top-left", "bottom-left"]:
-        x_pos = margin
-    elif position in ["top-right", "bottom-right"]:
-        max_logo_width = max(logo.width for logo in logo_imgs)
-        x_pos = base.width - max_logo_width - margin
-    else:
-        x_pos = (base.width - max(logo.width for logo in logo_imgs)) // 2
-    y = y_start
-    for logo in logo_imgs:
-        logo = logo.convert("RGBA")
-        base.paste(logo, (x_pos, y), mask=logo)
-        y += logo.height + margin
+        positions.append(pos)
+
+    # We'll paste logos individually at their positions
+    for resized_logo, pos in zip(logo_imgs, positions):
+        if pos in ["bottom-left", "bottom-right"]:
+            y = base.height - line_height_px - resized_logo.height - margin
+        elif pos == "center":
+            y = (base.height - resized_logo.height) // 2
+        else:
+            y = margin
+
+        if pos in ["top-left", "bottom-left"]:
+            x = margin
+        elif pos in ["top-right", "bottom-right"]:
+            x = base.width - resized_logo.width - margin
+        else:
+            x = (base.width - resized_logo.width) // 2
+
+        base.paste(resized_logo, (x, y), mask=resized_logo)
+
     return base
 
 def draw_split_line_with_text(image,
@@ -88,9 +92,12 @@ with st.sidebar:
 
     use_logo1 = st.checkbox("Activate Logo: Made in Germany", value=True)
     use_logo2 = st.checkbox("Activate Logo: DHL Logo", value=True)
+    use_logo3 = st.checkbox("Activate Logo: ECS", value=True)  # New checkbox for ECS logo
 
     logo1 = None
     logo2 = None
+    logo3 = None
+
     if use_logo1:
         try:
             logo1 = Image.open("made_in_germany.png")
@@ -101,10 +108,22 @@ with st.sidebar:
             logo2 = Image.open("dhl.png")
         except FileNotFoundError:
             st.error("Logo 'dhl.png' not found.")
+    if use_logo3:
+        try:
+            logo3 = Image.open("ECS.png")
+        except FileNotFoundError:
+            st.error("Logo 'ECS.png' not found.")
 
-    logos_to_add = [logo for logo in [logo1, logo2] if logo is not None]
+    # Collect logos as tuples (logo_image, position)
+    # Default position for ECS logo = bottom-left (above line)
+    logos_to_add = []
+    if logo1:
+        logos_to_add.append((logo1, "top-left"))  # You can keep old defaults or add option for position too if wanted
+    if logo2:
+        logos_to_add.append((logo2, "top-right"))
+    if logo3:
+        logos_to_add.append((logo3, "bottom-left"))
 
-    logo_position = st.selectbox("Logo Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
     logo_scale = st.slider("Logo Size %", 5, 50, 20)
 
     left_text = st.text_input("Left Text (left half)", "Awesome Product")
@@ -155,7 +174,7 @@ with col2:
         line_height_px = int(resized_image.height * line_height_pct)
         top_margin_in_line = 10
 
-        result = add_logos_to_image(resized_image, logos_to_add, logo_scale=logo_scale/100, position=logo_position, margin=20, line_height_px=line_height_px)
+        result = add_logos_to_image(resized_image, logos_to_add, logo_scale=logo_scale/100, position=None, margin=20, line_height_px=line_height_px)
         result = draw_split_line_with_text(
             result,
             left_text=left_text,
@@ -186,7 +205,7 @@ with col2:
             <div style="text-align:center;">
                 <img
                     src="data:image/png;base64,{img_b64}"
-                    style="max-width:60%; height:auto; cursor:pointer;"
+                    style="max-width:40%; height:auto; cursor:pointer;"
                     onclick="window.open(this.src)"
                     alt="Preview Image"
                 />
