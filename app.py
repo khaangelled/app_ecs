@@ -48,14 +48,14 @@ def hex_to_rgba(hex_color, opacity_percent):
     a = int(255 * (opacity_percent / 100))
     return (r, g, b, a)
 
-def add_text_bottom_same_line(image,
-                              line1_text, line2_text,
-                              line1_font_size, line2_font_size,
-                              line1_color, line2_color,
-                              line1_bg_rgba, line2_bg_rgba,
-                              is_bold_line1, is_bold_line2,
-                              margin=20,
-                              spacing=10):
+def add_text_bottom_split(image,
+                          line1_text, line2_text,
+                          line1_font_size, line2_font_size,
+                          line1_color, line2_color,
+                          line1_bg_rgba, line2_bg_rgba,
+                          is_bold_line1, is_bold_line2,
+                          margin=20,
+                          spacing=10):
     image = image.convert("RGBA")
     draw = ImageDraw.Draw(image)
 
@@ -81,10 +81,11 @@ def add_text_bottom_same_line(image,
     # Y position aligned at bottom with margin
     y = height - margin - max(text1_h, text2_h)
 
-    # X position for line1: start at middle + margin
-    x1 = half_width + margin
-    # X position for line2: right after line1 + spacing
-    x2 = x1 + text1_w + spacing
+    # Line 1: left aligned in left half, with margin from left edge
+    x1 = margin
+
+    # Line 2: left aligned in right half, starting at half_width + margin
+    x2 = half_width + margin
 
     # Padding around text bg rectangles
     padding1 = int(line1_font_size * 0.3)
@@ -92,11 +93,11 @@ def add_text_bottom_same_line(image,
 
     # Draw backgrounds
     rect1 = (x1 - padding1, y - padding1,
-             x1 + text1_w + padding1, y + text1_h + padding1)
+             min(x1 + text1_w + padding1, half_width - margin), y + text1_h + padding1)
     draw.rectangle(rect1, fill=line1_bg_rgba)
 
     rect2 = (x2 - padding2, y - padding2,
-             x2 + text2_w + padding2, y + text2_h + padding2)
+             min(x2 + text2_w + padding2, width - margin), y + text2_h + padding2)
     draw.rectangle(rect2, fill=line2_bg_rgba)
 
     # Draw texts
@@ -108,7 +109,7 @@ def add_text_bottom_same_line(image,
 
 # --- Streamlit app ---
 
-st.title("🖼️ Image with Bottom Right Half Text on Same Line")
+st.title("🖼️ Image with Split Bottom Text")
 
 uploaded_image = st.file_uploader("Upload base image (jpg/png)", type=["jpg","jpeg","png"])
 uploaded_logo = st.file_uploader("Upload logo image (PNG with transparency)", type=["png"])
@@ -124,10 +125,10 @@ if uploaded_image and uploaded_logo:
 
     result = add_logo_to_image(resized_image, logo, logo_scale=logo_scale, position=position)
 
-    st.markdown("### Text overlay (Bottom right half on same line)")
+    st.markdown("### Text overlay (Bottom split left/right half)")
 
-    product_name = st.text_input("Product Name (Line 1)", "Awesome Product")
-    product_info = st.text_input("Product Info (Line 2)", "Details or subtitle here")
+    product_name = st.text_input("Product Name (Left half)", "Awesome Product")
+    product_info = st.text_input("Product Info (Right half)", "Details or subtitle here")
 
     line1_color = st.color_picker("Line 1 Text Color", "#FFFFFF")
     line1_bg_color = st.color_picker("Line 1 Background Color", "#000000")
@@ -149,7 +150,7 @@ if uploaded_image and uploaded_logo:
     line1_bg_rgba = hex_to_rgba(line1_bg_color, line1_bg_opacity)
     line2_bg_rgba = hex_to_rgba(line2_bg_color, line2_bg_opacity)
 
-    result = add_text_bottom_same_line(
+    result = add_text_bottom_split(
         result,
         line1_text=product_name,
         line2_text=product_info,
