@@ -138,8 +138,8 @@ if uploaded_image:
     resized_image = resize_and_crop(image, 1600)
 
     # Logo options
-    logo_position = st.selectbox("Logo position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=2)
-    logo_scale = st.slider("Logo size (% of image width)", 5, 50, 30) / 100
+    logo_position = st.selectbox("Logo position", ["top-left", "top-right", "bottom-left", "top-right", "center"], index=2)
+    logo_scale = st.slider("Logo size (% of image width)", 5, 50, 20) / 100
 
     # Bottom line and text inputs
     st.markdown("### Bottom split line with side texts")
