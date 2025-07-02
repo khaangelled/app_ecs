@@ -169,7 +169,7 @@ if uploaded_image:
     col1, col2, col3, col4 = st.columns([1, 3, 1, 5])  
 
     with col2:
-        st.image(result, use_column_width=True)
+        st.image(result, use_container_width=True)
 
         buf = io.BytesIO()
         result.convert("RGB").save(buf, format="JPEG")
