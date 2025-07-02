@@ -65,16 +65,17 @@ def draw_split_line_with_text(image,
     right_rect = (width // 2, y_start, width, height)
     draw.rectangle(right_rect, fill=right_bg_color)
 
-    # Load fonts
+    # Load fonts (try bold if requested)
     try:
-        left_font = ImageFont.truetype("arialbd.ttf" if is_bold_left else "arial.ttf", left_font_size)
-        right_font = ImageFont.truetype("arialbd.ttf" if is_bold_right else "arial.ttf", right_font_size)
+        left_font_path = "arialbd.ttf" if is_bold_left else "arial.ttf"
+        right_font_path = "arialbd.ttf" if is_bold_right else "arial.ttf"
+        left_font = ImageFont.truetype(left_font_path, left_font_size)
+        right_font = ImageFont.truetype(right_font_path, right_font_size)
     except:
         left_font = ImageFont.load_default()
         right_font = ImageFont.load_default()
 
     # Calculate vertical position for text (center vertically in line)
-    # Using textbbox to get height:
     left_bbox = draw.textbbox((0, 0), left_text, font=left_font)
     left_text_height = left_bbox[3] - left_bbox[1]
 
@@ -94,8 +95,8 @@ def draw_split_line_with_text(image,
 
     return image
 
-# Streamlit app
-st.title("🖼️ Image with Split Bottom Line and Side Texts")
+# Streamlit app UI
+st.title("🖼️ Image with Split Bottom Line and Side Texts (Font size in px)")
 
 uploaded_image = st.file_uploader("Upload base image (jpg/png)", type=["jpg","jpeg","png"])
 uploaded_logo = st.file_uploader("Upload logo image (PNG with transparency)", type=["png"])
@@ -125,11 +126,9 @@ if uploaded_image and uploaded_logo:
     left_bold = st.checkbox("Bold Left Text", value=True)
     right_bold = st.checkbox("Bold Right Text", value=False)
 
-    left_font_pct = st.slider("Left Font Size (% of image height)", 5, 25, 15)
-    right_font_pct = st.slider("Right Font Size (% of image height)", 5, 25, 12)
-
-    left_font_size = int(1600 * (left_font_pct / 100))
-    right_font_size = int(1600 * (right_font_pct / 100))
+    # Here: font sizes in pixels
+    left_font_size = st.slider("Left Font Size (px)", min_value=10, max_value=200, value=60)
+    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=48)
 
     line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 15) / 100
 
