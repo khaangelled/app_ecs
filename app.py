@@ -134,9 +134,9 @@ with st.sidebar:
     line_height_pct = st.slider("Bottom Line Height %", 5, 30, 7) / 100
 
 # Layout: three columns - left for options, middle for uploader + messages, right for preview
-col1, col2, col3 = st.columns([3, 4, 5])
+col1, col2 = st.columns([1, 2])
 
-with col2:
+with col1:
     if uploaded_image:
         image = Image.open(uploaded_image)
         if image.width != image.height:
@@ -145,7 +145,7 @@ with col2:
                 " Or crop manually here: https://iloveimg.app/crop-image"
             )
 
-with col3:
+with col2:
     if uploaded_image:
         resized_image = resize_and_crop(image, 1600)
 
