@@ -40,52 +40,13 @@ def add_logo_to_image(base_image, logo_image, logo_scale=0.3, position="bottom-l
     base.paste(logo, pos, mask=logo)
     return base
 
-def add_ce_text(base_image, text="CE", text_scale=0.1, position="bottom-left", margin=10):
-    base = base_image.convert("RGBA")
-    draw = ImageDraw.Draw(base)
-
-    font_size = int(base.width * text_scale)
-
-    try:
-        font = ImageFont.truetype("arial.ttf", font_size)
-    except OSError:
-        font = ImageFont.load_default()
-
-    bbox = draw.textbbox((0, 0), text, font=font)
-    text_width = bbox[2] - bbox[0]
-    text_height = bbox[3] - bbox[1]
-
-    if position == "top-left":
-        pos = (margin, margin)
-    elif position == "top-right":
-        pos = (base.width - text_width - margin, margin)
-    elif position == "bottom-left":
-        pos = (margin, base.height - text_height - margin)
-    elif position == "bottom-right":
-        pos = (base.width - text_width - margin, base.height - text_height - margin)
-    elif position == "center":
-        pos = ((base.width - text_width) // 2, (base.height - text_height) // 2)
-    else:
-        pos = (margin, base.height - text_height - margin)
-
-    outline_range = max(1, font_size // 15)
-    for dx in range(-outline_range, outline_range + 1):
-        for dy in range(-outline_range, outline_range + 1):
-            if dx != 0 or dy != 0:
-                draw.text((pos[0] + dx, pos[1] + dy), text, font=font, fill=(0, 0, 0, 180))
-
-    draw.text(pos, text, font=font, fill=(255, 255, 255, 200))
-    return base
-
-def add_custom_text(base_image, text, text_scale, position, font_color, is_bold, margin=10):
-    base = base_image.convert("RGBA")
-    draw = ImageDraw.Draw(base)
-
-    font_size = int(base.width * text_scale)
+def add_text_with_background(image, text, font_size_px, position, font_color, bg_color, is_bold, offset_y=0, margin=10):
+    image = image.convert("RGBA")
+    draw = ImageDraw.Draw(image)
 
     try:
         font_path = "arialbd.ttf" if is_bold else "arial.ttf"
-        font = ImageFont.truetype(font_path, font_size)
+        font = ImageFont.truetype(font_path, font_size_px)
     except:
         font = ImageFont.load_default()
 
@@ -94,20 +55,33 @@ def add_custom_text(base_image, text, text_scale, position, font_color, is_bold,
     text_height = bbox[3] - bbox[1]
 
     if position == "top-left":
-        pos = (margin, margin)
+        x = margin
+        y = margin + offset_y
     elif position == "top-right":
-        pos = (base.width - text_width - margin, margin)
+        x = image.width - text_width - margin
+        y = margin + offset_y
     elif position == "bottom-left":
-        pos = (margin, base.height - text_height - margin)
+        x = margin
+        y = image.height - text_height - margin + offset_y
     elif position == "bottom-right":
-        pos = (base.width - text_width - margin, base.height - text_height - margin)
+        x = image.width - text_width - margin
+        y = image.height - text_height - margin + offset_y
     elif position == "center":
-        pos = ((base.width - text_width) // 2, (base.height - text_height) // 2)
+        x = (image.width - text_width) // 2
+        y = (image.height - text_height) // 2 + offset_y
     else:
-        pos = (margin, margin)
+        x = margin
+        y = margin + offset_y
 
-    draw.text(pos, text, font=font, fill=font_color)
-    return base
+    # Background rectangle
+    if bg_color[-2:] != "00":  # if not fully transparent
+        bg_rect = (x - 5, y - 5, x + text_width + 5, y + text_height + 5)
+        draw.rectangle(bg_rect, fill=bg_color)
+
+    # Draw text
+    draw.text((x, y), text, font=font, fill=font_color)
+
+    return image
 
 # Streamlit UI
 st.title("🖼️ Image Logo Overlay App (Resize & Crop to 1600x1600)")
@@ -158,28 +132,40 @@ if uploaded_image and uploaded_logo:
     line1 = st.text_input("Line 1 Text", value="First Line")
     line1_position = st.selectbox("Line 1 Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0, key="line1_pos")
     line1_color = st.color_picker("Line 1 Font Color", value="#FFFFFF", key="line1_color")
-    line1_scale = st.slider("Line 1 Font Size (% of image width)", 5, 50, 10, key="line1_scale") / 100
+    line1_bg_color = st.color_picker("Line 1 Background Color", value="#00000000", key="line1_bg")
+    line1_font_size = st.slider("Line 1 Font Size (px)", 10, 150, 60, key="line1_size")
     line1_bold = st.checkbox("Bold Line 1", value=False, key="line1_bold")
 
     # Line 2 Settings
     st.markdown("**Line 2 Settings**")
     line2 = st.text_input("Line 2 Text", value="Second Line")
-    line2_position = st.selectbox("Line 2 Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=1, key="line2_pos")
+    line2_position = st.selectbox("Line 2 Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0, key="line2_pos")
     line2_color = st.color_picker("Line 2 Font Color", value="#FF0000", key="line2_color")
-    line2_scale = st.slider("Line 2 Font Size (% of image width)", 5, 50, 10, key="line2_scale") / 100
+    line2_bg_color = st.color_picker("Line 2 Background Color", value="#00000000", key="line2_bg")
+    line2_font_size = st.slider("Line 2 Font Size (px)", 10, 150, 50, key="line2_size")
     line2_bold = st.checkbox("Bold Line 2", value=False, key="line2_bold")
 
-    # Compose final image
+    # Start building image
     result = add_logo_to_image(resized_image, logo, logo_scale=logo_scale, position=position)
 
     if add_ce:
         result = add_ce_text(result, text="CE", text_scale=ce_scale, position=ce_position)
 
+    # Add Line 1
     if line1:
-        result = add_custom_text(result, text=line1, text_scale=line1_scale, position=line1_position, font_color=line1_color, is_bold=line1_bold)
+        result = add_text_with_background(
+            result, text=line1, font_size_px=line1_font_size, position=line1_position,
+            font_color=line1_color, bg_color=line1_bg_color, is_bold=line1_bold
+        )
 
+    # Add Line 2 slightly below line 1
     if line2:
-        result = add_custom_text(result, text=line2, text_scale=line2_scale, position=line2_position, font_color=line2_color, is_bold=line2_bold)
+        offset = int(line1_font_size * 1.2) if line1_position == line2_position else 0
+        result = add_text_with_background(
+            result, text=line2, font_size_px=line2_font_size, position=line2_position,
+            font_color=line2_color, bg_color=line2_bg_color, is_bold=line2_bold,
+            offset_y=offset
+        )
 
     st.subheader("🔍 Preview:")
     st.image(result, use_container_width=True)
