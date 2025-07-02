@@ -75,9 +75,41 @@ def add_ce_text(base_image, text="CE", text_scale=0.1, position="bottom-left", m
                 draw.text((pos[0] + dx, pos[1] + dy), text, font=font, fill=(0, 0, 0, 180))
 
     draw.text(pos, text, font=font, fill=(255, 255, 255, 200))
-
     return base
 
+def add_custom_text(base_image, text, text_scale, position, font_color, is_bold, margin=10):
+    base = base_image.convert("RGBA")
+    draw = ImageDraw.Draw(base)
+
+    font_size = int(base.width * text_scale)
+
+    try:
+        font_path = "arialbd.ttf" if is_bold else "arial.ttf"
+        font = ImageFont.truetype(font_path, font_size)
+    except:
+        font = ImageFont.load_default()
+
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+
+    if position == "top-left":
+        pos = (margin, margin)
+    elif position == "top-right":
+        pos = (base.width - text_width - margin, margin)
+    elif position == "bottom-left":
+        pos = (margin, base.height - text_height - margin)
+    elif position == "bottom-right":
+        pos = (base.width - text_width - margin, base.height - text_height - margin)
+    elif position == "center":
+        pos = ((base.width - text_width) // 2, (base.height - text_height) // 2)
+    else:
+        pos = (margin, margin)
+
+    draw.text(pos, text, font=font, fill=font_color)
+    return base
+
+# Streamlit UI
 st.title("🖼️ Image Logo Overlay App (Resize & Crop to 1600x1600)")
 
 uploaded_image = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
@@ -89,34 +121,27 @@ if uploaded_image and uploaded_logo:
 
     resized_image = resize_and_crop(image, size=1600)
 
-    # Logo options with defaults: bottom-left and 30%
     position = st.selectbox(
         "Select logo position",
         options=["top-left", "top-right", "bottom-left", "bottom-right", "center"],
-        index=2,  # bottom-left default
+        index=2,
     )
-    st.markdown("**Best position:** bottom-left")
-
     logo_scale = st.slider(
         "Logo size (as % of image width)",
         min_value=5,
         max_value=50,
-        value=30,  # default 30%
+        value=30,
         step=1,
     ) / 100
-    st.markdown("**Recommended logo size:** 30% of image width")
 
-    # CE text toggle and options
     add_ce = st.checkbox("Add CE text on the image")
-
     if add_ce:
         ce_position = st.selectbox(
             "Select CE text position",
             options=["top-left", "top-right", "bottom-left", "bottom-right", "center"],
-            index=3,  # default bottom-right for CE text
+            index=3,
             key="ce_pos",
         )
-
         ce_scale = st.slider(
             "CE text size (as % of image width)",
             min_value=5,
@@ -126,10 +151,35 @@ if uploaded_image and uploaded_logo:
             key="ce_scale",
         ) / 100
 
+    st.markdown("## 📝 Add Two Custom Text Lines")
+
+    # Line 1 Settings
+    st.markdown("**Line 1 Settings**")
+    line1 = st.text_input("Line 1 Text", value="First Line")
+    line1_position = st.selectbox("Line 1 Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0, key="line1_pos")
+    line1_color = st.color_picker("Line 1 Font Color", value="#FFFFFF", key="line1_color")
+    line1_scale = st.slider("Line 1 Font Size (% of image width)", 5, 50, 10, key="line1_scale") / 100
+    line1_bold = st.checkbox("Bold Line 1", value=False, key="line1_bold")
+
+    # Line 2 Settings
+    st.markdown("**Line 2 Settings**")
+    line2 = st.text_input("Line 2 Text", value="Second Line")
+    line2_position = st.selectbox("Line 2 Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=1, key="line2_pos")
+    line2_color = st.color_picker("Line 2 Font Color", value="#FF0000", key="line2_color")
+    line2_scale = st.slider("Line 2 Font Size (% of image width)", 5, 50, 10, key="line2_scale") / 100
+    line2_bold = st.checkbox("Bold Line 2", value=False, key="line2_bold")
+
+    # Compose final image
     result = add_logo_to_image(resized_image, logo, logo_scale=logo_scale, position=position)
 
     if add_ce:
         result = add_ce_text(result, text="CE", text_scale=ce_scale, position=ce_position)
+
+    if line1:
+        result = add_custom_text(result, text=line1, text_scale=line1_scale, position=line1_position, font_color=line1_color, is_bold=line1_bold)
+
+    if line2:
+        result = add_custom_text(result, text=line2, text_scale=line2_scale, position=line2_position, font_color=line2_color, is_bold=line2_bold)
 
     st.subheader("🔍 Preview:")
     st.image(result, use_container_width=True)
