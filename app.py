@@ -2,24 +2,30 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import io
 
-def resize_and_crop(image, size=1600):
-    # If image already 1600x1600, return as is
-    if image.width == size and image.height == size:
-        return image
+def resize_and_crop(image, target_size=1600, do_resize=True, do_crop=True, crop_box=None):
+    img = image.copy()
 
-    # Otherwise, resize and crop as before
-    ratio = max(size / image.width, size / image.height)
-    new_width = int(image.width * ratio)
-    new_height = int(image.height * ratio)
-    resized = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    if do_resize:
+        # Resize so smaller side matches target_size, preserving aspect ratio
+        ratio = max(target_size / img.width, target_size / img.height)
+        new_width = int(img.width * ratio)
+        new_height = int(img.height * ratio)
+        img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-    left = (new_width - size) // 2
-    top = (new_height - size) // 2
-    right = left + size
-    bottom = top + size
+    if do_crop:
+        # Crop box = (left, top, right, bottom)
+        if crop_box is None:
+            # Center crop to target_size x target_size
+            left = (img.width - target_size) // 2
+            top = (img.height - target_size) // 2
+            right = left + target_size
+            bottom = top + target_size
+        else:
+            left, top, right, bottom = crop_box
+        
+        img = img.crop((left, top, right, bottom))
 
-    cropped = resized.crop((left, top, right, bottom))
-    return cropped
+    return img
 
 def add_logos_to_image(base_image, logos, logo_scale=0.3, position="top-left", margin=20, line_height_px=0):
     base = base_image.convert("RGBA")
@@ -108,7 +114,7 @@ def draw_split_line_with_text(image,
 
 # --- Streamlit UI ---
 
-st.title("🖼️ Image with Split Bottom Line and Side Texts (Preset Line Colors)")
+st.title("🖼️ Image with Split Bottom Line, Logos and Crop/Resize")
 
 # Upload base image
 st.markdown("<h2 style='font-weight:bold; font-size:24px;'>Upload Logos here</h2>", unsafe_allow_html=True)
@@ -139,7 +145,25 @@ logos_to_add = [logo for logo in [logo1, logo2] if logo is not None]
 
 if uploaded_image:
     image = Image.open(uploaded_image)
-    resized_image = resize_and_crop(image, 1600)
+
+    st.markdown("### Resize and Crop Options")
+    do_resize = st.checkbox("Resize image to square?", value=True)
+    target_size = 1600
+    if do_resize:
+        target_size = st.number_input("Target size (px) for width and height", min_value=100, max_value=5000, value=1600)
+
+    do_crop = st.checkbox("Crop image?", value=True)
+    crop_coords = None
+    if do_crop:
+        st.markdown("Enter crop box coordinates (left, top, right, bottom) or leave blank for center crop.")
+        left = st.number_input("Left", min_value=0, max_value=10000, value=0)
+        top = st.number_input("Top", min_value=0, max_value=10000, value=0)
+        right = st.number_input("Right", min_value=0, max_value=10000, value=0)
+        bottom = st.number_input("Bottom", min_value=0, max_value=10000, value=0)
+        if right > left and bottom > top:
+            crop_coords = (left, top, right, bottom)
+
+    resized_image = resize_and_crop(image, target_size=target_size, do_resize=do_resize, do_crop=do_crop, crop_box=crop_coords)
 
     # Logo options
     logo_position = st.selectbox("Logo position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
