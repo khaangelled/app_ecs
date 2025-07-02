@@ -151,7 +151,7 @@ with col1:
     if uploaded_image:
         image = Image.open(uploaded_image)
         if image.width != image.height:
-            st.warning(
+            st.write(
                 "⚠️ Image is not square (1:1 ratio). It will be center-cropped automatically to 1600×1600 pixels."
                 " Or crop manually here: https://iloveimg.app/crop-image"
             )
