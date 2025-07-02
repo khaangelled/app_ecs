@@ -123,7 +123,7 @@ with st.sidebar:
         logos_main.append(logo1)
     if logo2:
         logos_main.append(logo2)
-        if logo_5years:
+    if logo_5years:
             logos_main.append(logo_5years)
 
     logo_position = st.selectbox("Main Logos Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
