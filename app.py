@@ -76,22 +76,9 @@ def draw_split_line_with_text(image,
         left_font = ImageFont.load_default()
         right_font = ImageFont.load_default()
 
-    # Calculate vertical position for text: always y_start + top_margin_in_line
+    # Text vertical position with fixed margin from top of line
     y_text_left = y_start + top_margin_in_line
     y_text_right = y_start + top_margin_in_line
-
-    # Text bounding boxes (to check if text fits vertically)
-    left_bbox = draw.textbbox((0, 0), left_text, font=left_font)
-    left_text_height = left_bbox[3] - left_bbox[1]
-
-    right_bbox = draw.textbbox((0, 0), right_text, font=right_font)
-    right_text_height = right_bbox[3] - right_bbox[1]
-
-    # Warn if text might overflow line height (optional)
-    if left_text_height + top_margin_in_line > line_height:
-        st.warning(f"Left text height ({left_text_height}px) + top margin ({top_margin_in_line}px) exceeds line height ({line_height}px). Increase line height or reduce font size.")
-    if right_text_height + top_margin_in_line > line_height:
-        st.warning(f"Right text height ({right_text_height}px) + top margin ({top_margin_in_line}px) exceeds line height ({line_height}px). Increase line height or reduce font size.")
 
     # Text X positions:
     x_text_left = margin  # left text starts margin from left edge
@@ -103,70 +90,75 @@ def draw_split_line_with_text(image,
 
     return image
 
-# Streamlit UI
-st.title("🖼️ Image with Split Bottom Line and Side Texts (Preset Line Colors)")
+st.title("🖼️ Image with Logo and Split Bottom Line Text")
 
+# Checkboxes to activate/deactivate logo and text BEFORE upload
+enable_logo = st.checkbox("Add Logo", value=True)
+enable_text = st.checkbox("Add Bottom Text Line", value=True)
+
+# Upload files
 uploaded_image = st.file_uploader("Upload base image (jpg/png)", type=["jpg","jpeg","png"])
-uploaded_logo = st.file_uploader("Upload logo image (PNG with transparency)", type=["png"])
+uploaded_logo = st.file_uploader("Upload logo image (PNG with transparency)", type=["png"]) if enable_logo else None
 
-if uploaded_image and uploaded_logo:
+if uploaded_image:
     image = Image.open(uploaded_image)
-    logo = Image.open(uploaded_logo)
-
     resized_image = resize_and_crop(image, 1600)
+    result = resized_image.convert("RGBA")
 
-    position = st.selectbox("Logo position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=2)
-    logo_scale = st.slider("Logo size (% of image width)", 5, 50, 30) / 100
+    # Add logo if enabled and uploaded
+    if enable_logo and uploaded_logo:
+        logo = Image.open(uploaded_logo)
+        position = st.selectbox("Logo position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=2)
+        logo_scale = st.slider("Logo size (% of image width)", 5, 50, 30) / 100
+        result = add_logo_to_image(result, logo, logo_scale=logo_scale, position=position)
 
-    result = add_logo_to_image(resized_image, logo, logo_scale=logo_scale, position=position)
+    # Add bottom text line if enabled
+    if enable_text:
+        st.markdown("### Bottom split line with side texts")
 
-    st.markdown("### Bottom split line with side texts")
+        left_text = st.text_input("Left Text (left half)", "Awesome Product")
+        right_text = st.text_input("Right Text (right half)", "Details or subtitle here")
 
-    left_text = st.text_input("Left Text (left half)", "Awesome Product")
-    right_text = st.text_input("Right Text (right half)", "Details or subtitle here")
+        left_text_color = st.color_picker("Left Text Color", "#FFFFFF")
+        right_text_color = st.color_picker("Right Text Color", "#FFFFFF")
 
-    left_text_color = st.color_picker("Left Text Color", "#FFFFFF")
-    right_text_color = st.color_picker("Right Text Color", "#FFFFFF")
+        color_presets = {
+            "Olive & Cream": ("#606c38", "#fefae0"),
+            "Red & Yellow": ("#d62828", "#fcbf49"),
+            "Yellow & Beige": ("#ffc300", "#ede0d4"),
+            "Teal Blues": ("#264653", "#2a9d8f"),
+            "Green & Geige": ("#52796f", "#a68a64"),
+        }
 
-    # Preset line color options (name, (left_bg, right_bg))
-    color_presets = {
-        "Olive & Cream": ("#606c38", "#fefae0"),
-        "Red & Yellow": ("#d62828", "#fcbf49"),
-        "Yellow & Beige": ("#ffc300", "#ede0d4"),
-        "Teal Blues": ("#264653", "#2a9d8f"),
-        "Green & Geige": ("#52796f", "#a68a64"),
-    }
+        preset_name = st.selectbox("Choose bottom line color preset", list(color_presets.keys()))
+        left_bg_color, right_bg_color = color_presets[preset_name]
 
-    preset_name = st.selectbox("Choose bottom line color preset", list(color_presets.keys()))
+        left_bold = st.checkbox("Bold Left Text", value=True)
+        right_bold = st.checkbox("Bold Right Text", value=False)
 
-    left_bg_color, right_bg_color = color_presets[preset_name]
+        left_font_size = st.slider("Left Font Size (px)", min_value=10, max_value=200, value=60)
+        right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=50)
 
-    left_bold = st.checkbox("Bold Left Text", value=True)
-    right_bold = st.checkbox("Bold Right Text", value=False)
+        line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 7) / 100
 
-    left_font_size = st.slider("Left Font Size (px)", min_value=10, max_value=200, value=60)
-    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=50)
+        top_margin_in_line = 10  # fixed margin from top of line for text
 
-    line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 7) / 100
-
-    top_margin_in_line = 10  # fixed 10 px from top of line for text
-
-    result = draw_split_line_with_text(
-        result,
-        left_text=left_text,
-        right_text=right_text,
-        left_font_size=left_font_size,
-        right_font_size=right_font_size,
-        left_text_color=left_text_color,
-        right_text_color=right_text_color,
-        left_bg_color=left_bg_color,
-        right_bg_color=right_bg_color,
-        line_height_pct=line_height_pct,
-        margin=20,
-        top_margin_in_line=top_margin_in_line,
-        is_bold_left=left_bold,
-        is_bold_right=right_bold,
-    )
+        result = draw_split_line_with_text(
+            result,
+            left_text=left_text,
+            right_text=right_text,
+            left_font_size=left_font_size,
+            right_font_size=right_font_size,
+            left_text_color=left_text_color,
+            right_text_color=right_text_color,
+            left_bg_color=left_bg_color,
+            right_bg_color=right_bg_color,
+            line_height_pct=line_height_pct,
+            margin=20,
+            top_margin_in_line=top_margin_in_line,
+            is_bold_left=left_bold,
+            is_bold_right=right_bold,
+        )
 
     st.markdown("### Preview")
     st.image(result, use_container_width=True)
@@ -176,3 +168,5 @@ if uploaded_image and uploaded_logo:
     buf.seek(0)
 
     st.download_button("💾 Download Image with Logo and Text", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
+else:
+    st.info("Upload an image to see options and preview.")
