@@ -2,6 +2,8 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import io
 
+# --- Utility Functions ---
+
 def resize_and_crop(image, size=1600):
     ratio = max(size / image.width, size / image.height)
     new_width = int(image.width * ratio)
@@ -68,13 +70,7 @@ def add_ce_text(base_image, text="CE", text_scale=0.1, position="bottom-left", m
     else:
         pos = (margin, base.height - text_height - margin)
 
-    outline_range = max(1, font_size // 15)
-    for dx in range(-outline_range, outline_range + 1):
-        for dy in range(-outline_range, outline_range + 1):
-            if dx != 0 or dy != 0:
-                draw.text((pos[0] + dx, pos[1] + dy), text, font=font, fill=(0, 0, 0, 180))
-
-    draw.text(pos, text, font=font, fill=(255, 255, 255, 200))
+    draw.text(pos, text, font=font, fill=(255, 255, 255, 255))
     return base
 
 def hex_to_rgba(hex_color, opacity_percent):
@@ -118,16 +114,13 @@ def add_text_with_background(image, text, font_size_px, position, font_color, bg
         x = margin
         y = margin + offset_y
 
-    # Draw background rectangle
     draw.rectangle((x - 5, y - 5, x + text_width + 5, y + text_height + 5), fill=bg_rgba)
-
-    # Draw text
     draw.text((x, y), text, font=font, fill=font_color)
-
     return image
 
-# Streamlit App
-st.title("🖼️ Image Logo Overlay App (Resize & Crop to 1600x1600)")
+# --- Streamlit App ---
+
+st.title("🖼️ Image Logo/Text Overlay App")
 
 uploaded_image = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 uploaded_logo = st.file_uploader("Upload your logo (PNG with transparency)", type=["png"])
@@ -138,105 +131,66 @@ if uploaded_image and uploaded_logo:
 
     resized_image = resize_and_crop(image, size=1600)
 
-    position = st.selectbox(
-        "Select logo position",
-        options=["top-left", "top-right", "bottom-left", "bottom-right", "center"],
-        index=2,
-    )
-    logo_scale = st.slider(
-        "Logo size (as % of image width)",
-        min_value=5,
-        max_value=50,
-        value=30,
-        step=1,
-    ) / 100
+    position = st.selectbox("Logo position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=2)
+    logo_scale = st.slider("Logo size (% of image width)", 5, 50, 30) / 100
 
-    add_ce = st.checkbox("Add CE text on the image")
+    # Optional CE Text
+    add_ce = st.checkbox("Add CE text on image")
     if add_ce:
-        ce_position = st.selectbox(
-            "Select CE text position",
-            options=["top-left", "top-right", "bottom-left", "bottom-right", "center"],
-            index=3,
-            key="ce_pos",
-        )
-        ce_scale = st.slider(
-            "CE text size (as % of image width)",
-            min_value=5,
-            max_value=50,
-            value=10,
-            step=1,
-            key="ce_scale",
-        ) / 100
+        ce_position = st.selectbox("CE position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=3)
+        ce_scale = st.slider("CE size (% of width)", 5, 50, 10) / 100
 
-    st.markdown("## 📝 Add Two Custom Text Lines")
+    # --- Text Line 1 ---
+    st.markdown("### ✍️ Line 1 Text")
+    line1 = st.text_input("Line 1 Text", value="My Brand")
+    line1_position = st.selectbox("Line 1 Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
+    line1_color = st.color_picker("Font Color", "#FFFFFF")
+    line1_bg = st.color_picker("Background Color", "#000000")
+    line1_opacity = st.slider("Background Opacity (%)", 0, 100, 0)
+    line1_scale = st.slider("Font Size (as % of image)", 1, 50, 10) / 100
+    line1_font_size = int(1600 * line1_scale)
+    line1_bold = st.checkbox("Bold Line 1", value=True)
 
-    # Line 1
-    st.markdown("**Line 1 Settings**")
-    line1 = st.text_input("Line 1 Text", value="First Line")
-    line1_position = st.selectbox("Line 1 Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0, key="line1_pos")
-    line1_color = st.color_picker("Line 1 Font Color", value="#FFFFFF", key="line1_color")
-    line1_bg_color_hex = st.color_picker("Line 1 Background Color", value="#000000", key="line1_bg")
-    line1_bg_opacity = st.slider("Line 1 Background Opacity (%)", 0, 100, 0, key="line1_opacity")
-    line1_font_size = st.slider("Line 1 Font Size (px)", 10, 150, 60, key="line1_size")
-    line1_bold = st.checkbox("Bold Line 1", value=False, key="line1_bold")
+    # --- Text Line 2 ---
+    st.markdown("### ✍️ Line 2 Text")
+    line2 = st.text_input("Line 2 Text", value="Tagline or Subtitle")
+    line2_position = st.selectbox("Line 2 Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
+    line2_color = st.color_picker("Font Color 2", "#FF0000")
+    line2_bg = st.color_picker("Background Color 2", "#000000")
+    line2_opacity = st.slider("Background Opacity 2 (%)", 0, 100, 0)
+    line2_scale = st.slider("Font Size 2 (as % of image)", 1, 50, 8) / 100
+    line2_font_size = int(1600 * line2_scale)
+    line2_bold = st.checkbox("Bold Line 2", value=False)
 
-    # Line 2
-    st.markdown("**Line 2 Settings**")
-    line2 = st.text_input("Line 2 Text", value="Second Line")
-    line2_position = st.selectbox("Line 2 Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0, key="line2_pos")
-    line2_color = st.color_picker("Line 2 Font Color", value="#FF0000", key="line2_color")
-    line2_bg_color_hex = st.color_picker("Line 2 Background Color", value="#000000", key="line2_bg")
-    line2_bg_opacity = st.slider("Line 2 Background Opacity (%)", 0, 100, 0, key="line2_opacity")
-    line2_font_size = st.slider("Line 2 Font Size (px)", 10, 150, 50, key="line2_size")
-    line2_bold = st.checkbox("Bold Line 2", value=False, key="line2_bold")
-
-    # Build result image
+    # --- Process Image ---
     result = add_logo_to_image(resized_image, logo, logo_scale=logo_scale, position=position)
 
     if add_ce:
         result = add_ce_text(result, text="CE", text_scale=ce_scale, position=ce_position)
 
-    # Convert colors
-    line1_bg_rgba = hex_to_rgba(line1_bg_color_hex, line1_bg_opacity)
-    line2_bg_rgba = hex_to_rgba(line2_bg_color_hex, line2_bg_opacity)
-
     # Add Line 1
     if line1:
+        bg1 = hex_to_rgba(line1_bg, line1_opacity)
         result = add_text_with_background(
-            result,
-            text=line1,
-            font_size_px=line1_font_size,
-            position=line1_position,
-            font_color=line1_color,
-            bg_rgba=line1_bg_rgba,
-            is_bold=line1_bold,
-            offset_y=0,
+            result, line1, line1_font_size, line1_position,
+            font_color=line1_color, bg_rgba=bg1, is_bold=line1_bold
         )
 
-    # Add Line 2 below Line 1 if same position
+    # Add Line 2 (stacked below if same position)
     if line2:
         offset = int(line1_font_size * 1.2) if line1_position == line2_position else 0
+        bg2 = hex_to_rgba(line2_bg, line2_opacity)
         result = add_text_with_background(
-            result,
-            text=line2,
-            font_size_px=line2_font_size,
-            position=line2_position,
-            font_color=line2_color,
-            bg_rgba=line2_bg_rgba,
-            is_bold=line2_bold,
-            offset_y=offset,
+            result, line2, line2_font_size, line2_position,
+            font_color=line2_color, bg_rgba=bg2, is_bold=line2_bold,
+            offset_y=offset
         )
 
-    st.subheader("🔍 Preview:")
+    st.markdown("### 🔍 Preview")
     st.image(result, use_container_width=True)
 
     img_buffer = io.BytesIO()
     result.convert("RGB").save(img_buffer, format="JPEG")
     img_buffer.seek(0)
 
-    st.download_button(
-        label="💾 Download Image with Logo",
-        data=img_buffer,
-        file_name="image_with_logo.jpg",
-        mime="image/jpeg",
-    )
+    st.download_button("💾 Download Final Image", data=img_buffer, file_name="image_with_logo.jpg", mime="image/jpeg")
