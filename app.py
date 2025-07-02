@@ -179,7 +179,7 @@ with col2:
         )
 
         st.markdown("## Preview")
-        st.image(result, width=30%)  # fixed width for left alignment
+        st.image(result, width=500)  # fixed width for left alignment
 
         buf = io.BytesIO()
         result.convert("RGB").save(buf, format="JPEG")
