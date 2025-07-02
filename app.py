@@ -18,23 +18,15 @@ def resize_and_crop(image, size=1600):
     return cropped
 
 def add_logos_to_image(base_image, logos, logo_scale=0.15, position="top-left", margin=10, line_height_px=100):
-    """
-    logos: list of PIL Images (already loaded)
-    logo_scale: size relative to image width
-    position: where to place logos (top-left, top-right, bottom-left, bottom-right, center)
-    margin: margin from edges
-    line_height_px: the height of the bottom line in pixels, used for vertical adjustment
-    """
     base = base_image.convert("RGBA")
 
     logo_imgs = []
     for logo in logos:
         logo_width = int(base.width * logo_scale)
         logo_height = int(logo.height * (logo_width / logo.width))
-        resized_logo = logo.resize((logo_width, logo_height), Image.Resampling.LANCZOS)
+        resized_logo = logo.resize((logo_width, logo_height), Image.Resampling.LANCZOS).convert("RGBA")
         logo_imgs.append(resized_logo)
 
-    # Calculate total height of stacked logos + spacing (5 px between logos)
     total_height = sum(logo.height for logo in logo_imgs) + (len(logo_imgs) - 1) * 5
 
     if position == "top-left":
@@ -44,7 +36,6 @@ def add_logos_to_image(base_image, logos, logo_scale=0.15, position="top-left", 
         x = base.width - max(logo.width for logo in logo_imgs) - margin
         y = margin
     elif position == "bottom-left":
-        # place logos stacked above the bottom line (line_height_px + margin from bottom)
         x = margin
         y = base.height - line_height_px - total_height - margin
     elif position == "bottom-right":
@@ -57,12 +48,12 @@ def add_logos_to_image(base_image, logos, logo_scale=0.15, position="top-left", 
         x = margin
         y = margin
 
-    # Paste logos stacked vertically
     for logo in logo_imgs:
         base.paste(logo, (x, y), mask=logo)
-        y += logo.height + 5  # 5 px spacing between logos
+        y += logo.height + 5
 
     return base
+
 
 def draw_split_line_with_text(image,
                               left_text, right_text,
