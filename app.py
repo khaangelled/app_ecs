@@ -186,7 +186,6 @@ with col2:
             <div style="text-align:center;">
                 <img
                     src="data:image/png;base64,{img_b64}"
-                    style="max-width:40%; height:auto; cursor:pointer;"
                     style="max-width:60%; height:auto; cursor:pointer;"
                     onclick="window.open(this.src)"
                     alt="Preview Image"
