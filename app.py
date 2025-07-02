@@ -88,11 +88,14 @@ with st.sidebar:
 
     use_logo1 = st.checkbox("Activate Logo: Made in Germany", value=True)
     use_logo2 = st.checkbox("Activate Logo: DHL Logo", value=True)
+    use_logo_5years = st.checkbox("Activate Logo: 5 Years", value=False)  # New checkbox
     use_logo_ecs = st.checkbox("Activate Logo: ECS Logo", value=False)
 
     logo1 = None
     logo2 = None
+    logo_5years = None
     logo_ecs = None
+
     if use_logo1:
         try:
             logo1 = Image.open("made_in_germany.png")
@@ -103,13 +106,25 @@ with st.sidebar:
             logo2 = Image.open("dhl.png")
         except FileNotFoundError:
             st.error("Logo 'dhl.png' not found.")
+    if use_logo_5years:
+        try:
+            logo_5years = Image.open("5years.png")
+        except FileNotFoundError:
+            st.error("Logo '5years.png' not found.")
     if use_logo_ecs:
         try:
             logo_ecs = Image.open("ECS.png")
         except FileNotFoundError:
             st.error("Logo 'ECS.png' not found.")
 
-    logos_main = [logo for logo in [logo1, logo2] if logo is not None]
+    # Compose main logos list with stacking 5years directly below DHL
+    logos_main = []
+    if logo1:
+        logos_main.append(logo1)
+    if logo2:
+        logos_main.append(logo2)
+        if logo_5years:
+            logos_main.append(logo_5years)
 
     logo_position = st.selectbox("Main Logos Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
     logo_scale = st.slider("Main Logos Size %", 5, 50, 20)
@@ -165,7 +180,7 @@ with col2:
         line_height_px = int(resized_image.height * line_height_pct)
         top_margin_in_line = 10
 
-        # Add main logos
+        # Add main logos (Made in Germany, DHL, and 5years stacked)
         result = add_logos_to_image(resized_image, logos_main, logo_scale=logo_scale/100, position=logo_position, margin=20, line_height_px=line_height_px)
         
         # Add ECS logo separately
