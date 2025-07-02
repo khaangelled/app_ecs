@@ -80,11 +80,10 @@ def draw_split_line_with_text(image,
     draw.text((x_text_right, y_text_right), right_text, font=right_font, fill=right_text_color)
     return image
 
-st.title("🖼️ Ebay Image")
+st.title("🖼️ Image with Split Bottom Line and Side Texts (Preset Line Colors)")
 
 uploaded_image = st.file_uploader("Upload Base Image (jpg/png)", type=["jpg", "jpeg", "png"])
 
-# Sidebar options
 with st.sidebar:
     st.header("Options")
 
@@ -134,14 +133,10 @@ with st.sidebar:
 
     line_height_pct = st.slider("Bottom Line Height %", 5, 30, 7) / 100
 
-col1, col2 = st.columns([1, 2])  # Left options, middle uploader, right preview
+# Layout: three columns - left for options, middle for uploader + messages, right for preview
+col1, col2, col3 = st.columns([3, 4, 5])
 
-
-
-with col1:
-    st.write("## Upload Base Image (jpg/png)")
-    uploaded_image = st.file_uploader("", type=["jpg", "jpeg", "png"], key="uploader")
-
+with col2:
     if uploaded_image:
         image = Image.open(uploaded_image)
         if image.width != image.height:
@@ -149,18 +144,15 @@ with col1:
                 "⚠️ Image is not square (1:1 ratio). It will be center-cropped automatically to 1600×1600 pixels."
                 " Or crop manually here: https://iloveimg.app/crop-image"
             )
-    else:
-        image = None
 
-with col2:
-    if uploaded_image and image:
+with col3:
+    if uploaded_image:
         resized_image = resize_and_crop(image, 1600)
 
         line_height_px = int(resized_image.height * line_height_pct)
         top_margin_in_line = 10
 
-        result = add_logos_to_image(resized_image, logos_to_add, logo_scale=logo_scale / 100,
-                                    position=logo_position, margin=20, line_height_px=line_height_px)
+        result = add_logos_to_image(resized_image, logos_to_add, logo_scale=logo_scale/100, position=logo_position, margin=20, line_height_px=line_height_px)
         result = draw_split_line_with_text(
             result,
             left_text=left_text,
@@ -178,12 +170,29 @@ with col2:
             is_bold_right=right_bold,
         )
 
+        # Add CSS to limit preview image width to 40% (relative)
+        st.markdown(
+            """
+            <style>
+            .stImage > img {
+                max-width: 40% !important;
+                height: auto !important;
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
         st.markdown("## Preview")
-        st.image(result, width=500, use_column_width=False)  # fixed width for left alignment
+        st.image(result)  # full size image passed here
 
         buf = io.BytesIO()
         result.convert("RGB").save(buf, format="JPEG")
         buf.seek(0)
         st.download_button("💾 Download Image", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
+
     else:
         st.info("Please upload a base image to get started.")
