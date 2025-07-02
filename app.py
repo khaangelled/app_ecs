@@ -128,7 +128,7 @@ if uploaded_image and uploaded_logo:
 
     # Here: font sizes in pixels
     left_font_size = st.slider("Left Font Size (px)", min_value=10, max_value=200, value=60)
-    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=48)
+    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=40)
 
     line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 15) / 100
 
