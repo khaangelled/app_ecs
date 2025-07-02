@@ -175,7 +175,7 @@ with col2:
             """
             <style>
             .stImage > img {
-                max-width: 10% !important;
+                max-width: 5% !important;
 
                 display: block;
                 margin-left: auto;
