@@ -81,7 +81,7 @@ def draw_split_line_with_text(image,
     draw.text((x_text_right, y_text_right), right_text, font=right_font, fill=right_text_color)
     return image
 
-st.title("🖼️ Image with Split Bottom Line and Side Texts (Preset Line Colors)")
+st.title("🖼️ Ebay photo generate")
 
 with st.sidebar:
     st.header("Options")
