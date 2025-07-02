@@ -1,7 +1,7 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import io
-
+st.set_page_config(layout="wide")  # <- ADD THIS AT THE TOP
 def resize_and_crop(image, size=1600):
     ratio = max(size / image.width, size / image.height)
     new_width = int(image.width * ratio)
