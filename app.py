@@ -1,10 +1,24 @@
 import streamlit as st
-from streamlit_cropper import st_cropper
 from PIL import Image, ImageDraw, ImageFont
 import io
 
+def resize_and_crop(image, size=1600):
+    ratio = max(size / image.width, size / image.height)
+    new_width = int(image.width * ratio)
+    new_height = int(image.height * ratio)
+    resized = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+    left = (new_width - size) // 2
+    top = (new_height - size) // 2
+    right = left + size
+    bottom = top + size
+
+    cropped = resized.crop((left, top, right, bottom))
+    return cropped
+
 def add_logos_to_image(base_image, logos, logo_scale=0.3, position="top-left", margin=20, line_height_px=0):
     base = base_image.convert("RGBA")
+
     logo_imgs = []
     for logo in logos:
         logo_w = int(base.width * logo_scale)
@@ -31,11 +45,12 @@ def add_logos_to_image(base_image, logos, logo_scale=0.3, position="top-left", m
 
     y = y_start
     for logo in logo_imgs:
-        logo = logo.convert("RGBA")
+        logo = logo.convert("RGBA")  # <--- Ensure alpha channel for mask
         base.paste(logo, (x_pos, y), mask=logo)
         y += logo.height + margin
 
     return base
+
 
 def draw_split_line_with_text(image,
                               left_text, right_text,
@@ -49,16 +64,21 @@ def draw_split_line_with_text(image,
                               is_bold_right=False):
     image = image.convert("RGBA")
     draw = ImageDraw.Draw(image)
+
     width, height = image.size
+
     line_height = int(height * line_height_pct)
     y_start = height - line_height
 
+    # Draw left half background line
     left_rect = (0, y_start, width // 2, height)
     draw.rectangle(left_rect, fill=left_bg_color)
 
+    # Draw right half background line
     right_rect = (width // 2, y_start, width, height)
     draw.rectangle(right_rect, fill=right_bg_color)
 
+    # Load fonts (try bold if requested)
     try:
         left_font_path = "arialbd.ttf" if is_bold_left else "arial.ttf"
         right_font_path = "arialbd.ttf" if is_bold_right else "arial.ttf"
@@ -68,97 +88,98 @@ def draw_split_line_with_text(image,
         left_font = ImageFont.load_default()
         right_font = ImageFont.load_default()
 
+    # Vertical position for text: fixed top margin inside line
     y_text_left = y_start + top_margin_in_line
     y_text_right = y_start + top_margin_in_line
-    x_text_left = margin
-    x_text_right = width // 2 + margin
 
+    # Text X positions:
+    x_text_left = margin  # left text starts margin from left edge
+    x_text_right = width // 2 + margin  # right text starts margin from center
+
+    # Draw texts (no background on text itself)
     draw.text((x_text_left, y_text_left), left_text, font=left_font, fill=left_text_color)
     draw.text((x_text_right, y_text_right), right_text, font=right_font, fill=right_text_color)
 
     return image
 
 # --- Streamlit UI ---
-st.set_page_config(page_title="Image Editor", layout="wide")
-st.title("🖼️ Crop, Add Logos & Bottom Text")
 
-uploaded_image = st.file_uploader("Upload Base Image (jpg/png)", type=["jpg", "jpeg", "png"])
+st.title("🖼️ Image with Split Bottom Line and Side Texts (Preset Line Colors)")
 
-# Logo loading
+# Upload base image
+st.markdown("<h2 style='font-weight:bold; font-size:24px;'>Upload Logos here</h2>", unsafe_allow_html=True)
+uploaded_image = st.file_uploader("(jpg/png)", type=["jpg", "jpeg", "png"])
+
+# Logo Section Header (bold & big)
+st.markdown("<h2 style='font-weight:bold; font-size:24px;'>Activate or deactivate logos below:</h2>", unsafe_allow_html=True)
+
+# Load logos from local folder and toggle activation
 use_logo1 = st.checkbox("Activate Logo: Made in Germany", value=True)
 use_logo2 = st.checkbox("Activate Logo: DHL Logo", value=True)
 
 logo1 = None
 logo2 = None
+
 if use_logo1:
     try:
         logo1 = Image.open("made_in_germany.png")
     except FileNotFoundError:
-        st.error("Logo 'made_in_germany.png' not found.")
+        st.error("Logo 'made_in_germany.png' not found in the app folder.")
 if use_logo2:
     try:
         logo2 = Image.open("dhl.png")
     except FileNotFoundError:
-        st.error("Logo 'dhl.png' not found.")
+        st.error("Logo 'dhl.png' not found in the app folder.")
 
 logos_to_add = [logo for logo in [logo1, logo2] if logo is not None]
 
 if uploaded_image:
-    img = Image.open(uploaded_image)
-
-    st.markdown("### 🖌️ Crop Image")
-    cropped_img = st_cropper(
-        img,
-        realtime_update=True,
-        box_color="#FF0000",
-        aspect_ratio=(1, 1),  # or use `None` for free cropping
-        box_radius=10
-    )
+    image = Image.open(uploaded_image)
+    resized_image = resize_and_crop(image, 1600)
 
     # Logo options
-    st.markdown("### 🧩 Logo Settings")
-    logo_position = st.selectbox("Logo Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
+    logo_position = st.selectbox("Logo position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
     logo_scale = st.slider("Logo size (% of image width)", 5, 50, 20) / 100
 
-    # Bottom line text options
-    st.markdown("### ✍️ Bottom Split Line with Texts")
-    left_text = st.text_input("Left Text", "Awesome Product")
-    right_text = st.text_input("Right Text", "Details or subtitle here")
+    # Bottom line and text inputs
+    st.markdown("### Bottom split line with side texts")
+
+    left_text = st.text_input("Left Text (left half)", "Awesome Product")
+    right_text = st.text_input("Right Text (right half)", "Details or subtitle here")
+
     left_text_color = st.color_picker("Left Text Color", "#FFFFFF")
     right_text_color = st.color_picker("Right Text Color", "#FFFFFF")
 
+    # Preset line color options (name, (left_bg, right_bg))
     color_presets = {
-        "Green & Beige": ("#52796f", "#a68a64"),
+        "Green & Geige": ("#52796f", "#a68a64"),
         "Red & Yellow": ("#d62828", "#fcbf49"),
         "Yellow & Beige": ("#ffc300", "#ede0d4"),
         "Teal Blues": ("#264653", "#2a9d8f"),
         "Olive & Cream": ("#606c38", "#fefae0"),
     }
-    preset_name = st.selectbox("Choose Background Colors", list(color_presets.keys()))
+
+    preset_name = st.selectbox("Choose bottom line color preset", list(color_presets.keys()))
+
     left_bg_color, right_bg_color = color_presets[preset_name]
 
     left_bold = st.checkbox("Bold Left Text", value=True)
     right_bold = st.checkbox("Bold Right Text", value=False)
 
-    left_font_size = st.slider("Left Font Size (px)", 10, 200, 60)
-    right_font_size = st.slider("Right Font Size (px)", 10, 200, 50)
-    line_height_pct = st.slider("Bottom Line Height (% of image)", 5, 30, 7) / 100
-    line_height_px = int(cropped_img.height * line_height_pct)
-    top_margin_in_line = 10
+    left_font_size = st.slider("Left Font Size (px)", min_value=10, max_value=200, value=60)
+    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=50)
 
-    # Apply logos
-    result_img = add_logos_to_image(
-        cropped_img,
-        logos_to_add,
-        logo_scale=logo_scale,
-        position=logo_position,
-        margin=20,
-        line_height_px=line_height_px
-    )
+    line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 7) / 100
+    line_height_px = int(resized_image.height * line_height_pct)
 
-    # Apply bottom text
-    result_img = draw_split_line_with_text(
-        result_img,
+    top_margin_in_line = 10  # fixed 10 px from top of line for text
+
+    # Add logos stacked with respect to line height if bottom positioned
+    result = add_logos_to_image(resized_image, logos_to_add, logo_scale=logo_scale, position=logo_position, margin=20, line_height_px=line_height_px)
+
+    # Draw bottom line with text
+    result = draw_split_line_with_text(
+        result,
         left_text=left_text,
         right_text=right_text,
         left_font_size=left_font_size,
@@ -174,19 +195,14 @@ if uploaded_image:
         is_bold_right=right_bold,
     )
 
-    st.markdown("### 📷 Preview")
-    st.image(result_img, use_container_width=True)
+    st.markdown("### Preview")
+    st.image(result, use_container_width=True)
 
     buf = io.BytesIO()
-    result_img.convert("RGB").save(buf, format="JPEG")
+    result.convert("RGB").save(buf, format="JPEG")
     buf.seek(0)
 
-    st.download_button(
-        "💾 Download Final Image",
-        data=buf,
-        file_name="final_image.jpg",
-        mime="image/jpeg"
-    )
+    st.download_button("💾 Download Image with Logo and Text", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
 
 else:
-    st.info("Please upload an image to begin.")
+    st.info("Please upload a base image to get started.")
