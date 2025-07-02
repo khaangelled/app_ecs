@@ -123,11 +123,11 @@ if uploaded_image:
         right_text_color = st.color_picker("Right Text Color", "#FFFFFF")
 
         color_presets = {
-            "Olive & Cream": ("#606c38", "#fefae0"),
+           "Green & Geige": ("#52796f", "#a68a64"),
             "Red & Yellow": ("#d62828", "#fcbf49"),
             "Yellow & Beige": ("#ffc300", "#ede0d4"),
             "Teal Blues": ("#264653", "#2a9d8f"),
-            "Green & Geige": ("#52796f", "#a68a64"),
+             "Olive & Cream": ("#606c38", "#fefae0"),
         }
 
         preset_name = st.selectbox("Choose bottom line color preset", list(color_presets.keys()))
