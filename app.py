@@ -116,7 +116,7 @@ st.title("🖼️ Image with Split Bottom Line and Side Texts (Preset Line Color
 
 # Upload base image
 st.markdown("<h2 style='font-weight:bold; font-size:24px;'>Upload Logos here</h2>", unsafe_allow_html=True)
-uploaded_image = st.file_uploader("Upload base image (jpg/png)", type=["jpg", "jpeg", "png"])
+uploaded_image = st.file_uploader("(jpg/png)", type=["jpg", "jpeg", "png"])
 
 # Logo Section Header (bold & big)
 st.markdown("<h2 style='font-weight:bold; font-size:24px;'>Activate or deactivate logos below:</h2>", unsafe_allow_html=True)
