@@ -139,6 +139,7 @@ if uploaded_image:
     if image.width != image.height:
         st.markdown(
             "<h2 style='color:red;'>⚠️ Warning: Your image is not square (1:1 ratio). It will be center-cropped automatically to 1600×1600 pixels.</h2>",
+            <h2 >go to this website and change the size with 1:1 https://iloveimg.app/crop-image </h2>" ,
             unsafe_allow_html=True
         )
 
