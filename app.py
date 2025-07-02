@@ -17,11 +17,6 @@ def resize_and_crop(image, size=1600):
     return cropped
 
 def add_logos_to_image(base_image, logos, logo_scale=0.3, position="top-left", margin=20, line_height_px=0):
-    """
-    Adds multiple logos stacked vertically at the specified position.
-    If position is bottom-left or bottom-right, logos are placed just above the bottom line,
-    stacked with margin.
-    """
     base = base_image.convert("RGBA")
 
     logo_imgs = []
@@ -31,34 +26,31 @@ def add_logos_to_image(base_image, logos, logo_scale=0.3, position="top-left", m
         resized_logo = logo.resize((logo_w, logo_h), Image.Resampling.LANCZOS)
         logo_imgs.append(resized_logo)
 
-    # Calculate total height of stacked logos + margins
     total_height = sum(logo.height for logo in logo_imgs) + margin * (len(logo_imgs) - 1)
 
-    # Determine starting y based on position and line_height_px
     if position in ["bottom-left", "bottom-right"]:
-        y_start = base.height - line_height_px - total_height - margin  # above line with margin
+        y_start = base.height - line_height_px - total_height - margin
     elif position == "center":
         y_start = (base.height - total_height) // 2
-    else:  # top-left or top-right
+    else:
         y_start = margin
 
-    # X position depends on left or right
     if position in ["top-left", "bottom-left"]:
         x_pos = margin
     elif position in ["top-right", "bottom-right"]:
-        # use logo width of first logo as width reference
         max_logo_width = max(logo.width for logo in logo_imgs)
         x_pos = base.width - max_logo_width - margin
-    else:  # center horizontally
+    else:
         x_pos = (base.width - max(logo.width for logo in logo_imgs)) // 2
 
-    # Paste logos stacked vertically
     y = y_start
     for logo in logo_imgs:
+        logo = logo.convert("RGBA")  # <--- Ensure alpha channel for mask
         base.paste(logo, (x_pos, y), mask=logo)
         y += logo.height + margin
 
     return base
+
 
 def draw_split_line_with_text(image,
                               left_text, right_text,
