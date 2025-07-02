@@ -48,7 +48,9 @@ def draw_split_line_with_text(image,
                               line_height_pct=0.15,
                               margin=20,
                               is_bold_left=False,
-                              is_bold_right=False):
+                              is_bold_right=False,
+                              left_vert_offset=0,
+                              right_vert_offset=0):
     image = image.convert("RGBA")
     draw = ImageDraw.Draw(image)
 
@@ -75,21 +77,21 @@ def draw_split_line_with_text(image,
         left_font = ImageFont.load_default()
         right_font = ImageFont.load_default()
 
-    # Calculate vertical position for text (center vertically in line)
+    # Calculate vertical position for text (center vertically in line plus offset)
     left_bbox = draw.textbbox((0, 0), left_text, font=left_font)
     left_text_height = left_bbox[3] - left_bbox[1]
 
     right_bbox = draw.textbbox((0, 0), right_text, font=right_font)
     right_text_height = right_bbox[3] - right_bbox[1]
 
-    y_text_left = y_start + (line_height - left_text_height) // 2
-    y_text_right = y_start + (line_height - right_text_height) // 2
+    y_text_left = y_start + (line_height - left_text_height) // 2 + left_vert_offset
+    y_text_right = y_start + (line_height - right_text_height) // 2 + right_vert_offset
 
     # Text X positions:
-    x_text_left = margin  # left text starts with margin from left edge
+    x_text_left = margin  # left text starts margin from left edge
     x_text_right = width // 2 + margin  # right text starts margin from center
 
-    # Draw texts (no background)
+    # Draw texts (no background on text itself)
     draw.text((x_text_left, y_text_left), left_text, font=left_font, fill=left_text_color)
     draw.text((x_text_right, y_text_right), right_text, font=right_font, fill=right_text_color)
 
@@ -126,11 +128,16 @@ if uploaded_image and uploaded_logo:
     left_bold = st.checkbox("Bold Left Text", value=True)
     right_bold = st.checkbox("Bold Right Text", value=False)
 
-    # Here: font sizes in pixels
+    # Font size in pixels
     left_font_size = st.slider("Left Font Size (px)", min_value=10, max_value=200, value=60)
-    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=40)
+    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=48)
 
-    line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 9) / 100
+    # Default line height is 20%
+    line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 20) / 100
+
+    # Optional vertical offset sliders to nudge text up/down inside the line (in pixels)
+    left_vert_offset = st.slider("Left Text Vertical Offset (px)", -50, 50, 0)
+    right_vert_offset = st.slider("Right Text Vertical Offset (px)", -50, 50, 0)
 
     result = draw_split_line_with_text(
         result,
@@ -144,7 +151,9 @@ if uploaded_image and uploaded_logo:
         right_bg_color=right_bg_color,
         line_height_pct=line_height_pct,
         is_bold_left=left_bold,
-        is_bold_right=right_bold
+        is_bold_right=right_bold,
+        left_vert_offset=left_vert_offset,
+        right_vert_offset=right_vert_offset,
     )
 
     st.markdown("### Preview")
