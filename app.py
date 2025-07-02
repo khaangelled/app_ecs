@@ -79,11 +79,12 @@ def draw_split_line_with_text(image,
     return image
 
 # --- Streamlit UI ---
-st.title("🖼️ Manual Cropper with Logos and Bottom Text")
+st.set_page_config(page_title="Image Editor", layout="wide")
+st.title("🖼️ Crop, Add Logos & Bottom Text")
 
 uploaded_image = st.file_uploader("Upload Base Image (jpg/png)", type=["jpg", "jpeg", "png"])
 
-# Logo upload or load
+# Logo loading
 use_logo1 = st.checkbox("Activate Logo: Made in Germany", value=True)
 use_logo2 = st.checkbox("Activate Logo: DHL Logo", value=True)
 
@@ -104,18 +105,25 @@ logos_to_add = [logo for logo in [logo1, logo2] if logo is not None]
 
 if uploaded_image:
     img = Image.open(uploaded_image)
-    
-    # Use st_cropper for draggable crop box
-    cropped_img = st_cropper(img, realtime_update=True, box_color="#FF0000", aspect_ratio=1, box_radius=10)
-    
+
+    st.markdown("### 🖌️ Crop Image")
+    cropped_img = st_cropper(
+        img,
+        realtime_update=True,
+        box_color="#FF0000",
+        aspect_ratio=(1, 1),  # or use `None` for free cropping
+        box_radius=10
+    )
+
     # Logo options
-    logo_position = st.selectbox("Logo position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
+    st.markdown("### 🧩 Logo Settings")
+    logo_position = st.selectbox("Logo Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
     logo_scale = st.slider("Logo size (% of image width)", 5, 50, 20) / 100
 
     # Bottom line text options
-    st.markdown("### Bottom split line with side texts")
-    left_text = st.text_input("Left Text (left half)", "Awesome Product")
-    right_text = st.text_input("Right Text (right half)", "Details or subtitle here")
+    st.markdown("### ✍️ Bottom Split Line with Texts")
+    left_text = st.text_input("Left Text", "Awesome Product")
+    right_text = st.text_input("Right Text", "Details or subtitle here")
     left_text_color = st.color_picker("Left Text Color", "#FFFFFF")
     right_text_color = st.color_picker("Right Text Color", "#FFFFFF")
 
@@ -126,7 +134,7 @@ if uploaded_image:
         "Teal Blues": ("#264653", "#2a9d8f"),
         "Olive & Cream": ("#606c38", "#fefae0"),
     }
-    preset_name = st.selectbox("Choose bottom line color preset", list(color_presets.keys()))
+    preset_name = st.selectbox("Choose Background Colors", list(color_presets.keys()))
     left_bg_color, right_bg_color = color_presets[preset_name]
 
     left_bold = st.checkbox("Bold Left Text", value=True)
@@ -134,15 +142,21 @@ if uploaded_image:
 
     left_font_size = st.slider("Left Font Size (px)", 10, 200, 60)
     right_font_size = st.slider("Right Font Size (px)", 10, 200, 50)
-
-    line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 7) / 100
+    line_height_pct = st.slider("Bottom Line Height (% of image)", 5, 30, 7) / 100
     line_height_px = int(cropped_img.height * line_height_pct)
-    top_margin_in_line = 10  # px
+    top_margin_in_line = 10
 
-    # Add logos
-    result_img = add_logos_to_image(cropped_img, logos_to_add, logo_scale=logo_scale, position=logo_position, margin=20, line_height_px=line_height_px)
+    # Apply logos
+    result_img = add_logos_to_image(
+        cropped_img,
+        logos_to_add,
+        logo_scale=logo_scale,
+        position=logo_position,
+        margin=20,
+        line_height_px=line_height_px
+    )
 
-    # Draw bottom split line with text
+    # Apply bottom text
     result_img = draw_split_line_with_text(
         result_img,
         left_text=left_text,
@@ -160,14 +174,19 @@ if uploaded_image:
         is_bold_right=right_bold,
     )
 
-    st.markdown("### Preview")
+    st.markdown("### 📷 Preview")
     st.image(result_img, use_container_width=True)
 
-    # Download button
     buf = io.BytesIO()
     result_img.convert("RGB").save(buf, format="JPEG")
     buf.seek(0)
-    st.download_button("💾 Download Image with Logo and Text", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
+
+    st.download_button(
+        "💾 Download Final Image",
+        data=buf,
+        file_name="final_image.jpg",
+        mime="image/jpeg"
+    )
 
 else:
-    st.info("Please upload a base image to get started.")
+    st.info("Please upload an image to begin.")
