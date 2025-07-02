@@ -16,7 +16,7 @@ def resize_and_crop(image, size=1600):
     bottom = top + size
     cropped = resized.crop((left, top, right, bottom))
     return cropped
-More actions
+
 def add_logos_to_image(base_image, logos, logo_scale=0.3, position="top-left", margin=20, line_height_px=0):
     base = base_image.convert("RGBA")
     logo_imgs = []
