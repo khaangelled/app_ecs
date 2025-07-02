@@ -187,7 +187,7 @@ with col3:
 st.markdown("## Preview")
 st.image(result, use_container_width=True)
 
-
+    with col3:  
         buf = io.BytesIO()
         result.convert("RGB").save(buf, format="JPEG")
         buf.seek(0)
