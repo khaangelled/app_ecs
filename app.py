@@ -48,12 +48,14 @@ def hex_to_rgba(hex_color, opacity_percent):
     a = int(255 * (opacity_percent / 100))
     return (r, g, b, a)
 
-def add_text_bottom_right_half(image, line1_text, line2_text,
-                               line1_font_size, line2_font_size,
-                               line1_color, line2_color,
-                               line1_bg_rgba, line2_bg_rgba,
-                               is_bold_line1, is_bold_line2,
-                               margin=20, spacing=10):
+def add_text_bottom_same_line(image,
+                              line1_text, line2_text,
+                              line1_font_size, line2_font_size,
+                              line1_color, line2_color,
+                              line1_bg_rgba, line2_bg_rgba,
+                              is_bold_line1, is_bold_line2,
+                              margin=20,
+                              spacing=10):
     image = image.convert("RGBA")
     draw = ImageDraw.Draw(image)
 
@@ -76,40 +78,37 @@ def add_text_bottom_right_half(image, line1_text, line2_text,
     text2_w = bbox2[2] - bbox2[0]
     text2_h = bbox2[3] - bbox2[1]
 
-    # Calculate Y positions (bottom margin)
-    y2 = height - margin - text2_h  # bottom line
-    y1 = y2 - text1_h - spacing      # line1 above line2 with spacing
+    # Y position aligned at bottom with margin
+    y = height - margin - max(text1_h, text2_h)
 
-    # Line 1 position: left aligned at middle (half-width) + margin
+    # X position for line1: start at middle + margin
     x1 = half_width + margin
+    # X position for line2: right after line1 + spacing
+    x2 = x1 + text1_w + spacing
 
-    # Line 2 position: left aligned at middle (half-width) + margin
-    x2 = half_width + margin
-
-    # Draw background rectangles behind texts, with padding
+    # Padding around text bg rectangles
     padding1 = int(line1_font_size * 0.3)
     padding2 = int(line2_font_size * 0.3)
 
-    # Background rect for line1
-    rect1 = (x1 - padding1, y1 - padding1,
-             x1 + text1_w + padding1, y1 + text1_h + padding1)
+    # Draw backgrounds
+    rect1 = (x1 - padding1, y - padding1,
+             x1 + text1_w + padding1, y + text1_h + padding1)
     draw.rectangle(rect1, fill=line1_bg_rgba)
 
-    # Background rect for line2
-    rect2 = (x2 - padding2, y2 - padding2,
-             x2 + text2_w + padding2, y2 + text2_h + padding2)
+    rect2 = (x2 - padding2, y - padding2,
+             x2 + text2_w + padding2, y + text2_h + padding2)
     draw.rectangle(rect2, fill=line2_bg_rgba)
 
-    # Draw texts without outline or border, just plain color
-    draw.text((x1, y1), line1_text, font=font1, fill=line1_color)
-    draw.text((x2, y2), line2_text, font=font2, fill=line2_color)
+    # Draw texts
+    draw.text((x1, y), line1_text, font=font1, fill=line1_color)
+    draw.text((x2, y), line2_text, font=font2, fill=line2_color)
 
     return image
 
 
-# --- Streamlit app starts here ---
+# --- Streamlit app ---
 
-st.title("🖼️ Image with Bottom-Right Half Text Overlay")
+st.title("🖼️ Image with Bottom Right Half Text on Same Line")
 
 uploaded_image = st.file_uploader("Upload base image (jpg/png)", type=["jpg","jpeg","png"])
 uploaded_logo = st.file_uploader("Upload logo image (PNG with transparency)", type=["png"])
@@ -120,15 +119,12 @@ if uploaded_image and uploaded_logo:
 
     resized_image = resize_and_crop(image, 1600)
 
-    # Logo options
     position = st.selectbox("Logo position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=2)
     logo_scale = st.slider("Logo size (% of image width)", 5, 50, 30) / 100
 
-    # Compose image with logo
     result = add_logo_to_image(resized_image, logo, logo_scale=logo_scale, position=position)
 
-    # Text inputs fixed for bottom right half
-    st.markdown("### Text overlay (Bottom right half of image)")
+    st.markdown("### Text overlay (Bottom right half on same line)")
 
     product_name = st.text_input("Product Name (Line 1)", "Awesome Product")
     product_info = st.text_input("Product Info (Line 2)", "Details or subtitle here")
@@ -153,8 +149,7 @@ if uploaded_image and uploaded_logo:
     line1_bg_rgba = hex_to_rgba(line1_bg_color, line1_bg_opacity)
     line2_bg_rgba = hex_to_rgba(line2_bg_color, line2_bg_opacity)
 
-    # Add texts fixed at bottom right half
-    result = add_text_bottom_right_half(
+    result = add_text_bottom_same_line(
         result,
         line1_text=product_name,
         line2_text=product_info,
