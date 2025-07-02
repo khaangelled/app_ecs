@@ -1,17 +1,7 @@
 import streamlit as st
+from streamlit_cropper import st_cropper
 from PIL import Image, ImageDraw, ImageFont
 import io
-
-def resize_image_to_min(image, min_size=1600):
-    """Resize image so that both width and height are at least min_size."""
-    ratio = max(min_size / image.width, min_size / image.height, 1)  # never scale down here
-    new_width = int(image.width * ratio)
-    new_height = int(image.height * ratio)
-    return image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-def crop_image(image, size=1600, x_offset=0, y_offset=0):
-    """Crop a square of given size with offsets (x_offset, y_offset)."""
-    return image.crop((x_offset, y_offset, x_offset + size, y_offset + size))
 
 def add_logos_to_image(base_image, logos, logo_scale=0.3, position="top-left", margin=20, line_height_px=0):
     base = base_image.convert("RGBA")
@@ -41,7 +31,7 @@ def add_logos_to_image(base_image, logos, logo_scale=0.3, position="top-left", m
 
     y = y_start
     for logo in logo_imgs:
-        logo = logo.convert("RGBA")  # Ensure alpha channel for mask
+        logo = logo.convert("RGBA")
         base.paste(logo, (x_pos, y), mask=logo)
         y += logo.height + margin
 
@@ -63,11 +53,9 @@ def draw_split_line_with_text(image,
     line_height = int(height * line_height_pct)
     y_start = height - line_height
 
-    # Left half background line
     left_rect = (0, y_start, width // 2, height)
     draw.rectangle(left_rect, fill=left_bg_color)
 
-    # Right half background line
     right_rect = (width // 2, y_start, width, height)
     draw.rectangle(right_rect, fill=right_bg_color)
 
@@ -90,13 +78,12 @@ def draw_split_line_with_text(image,
 
     return image
 
-
 # --- Streamlit UI ---
-st.title("🖼️ Manual Crop + Logos + Bottom Text Line")
+st.title("🖼️ Manual Cropper with Logos and Bottom Text")
 
 uploaded_image = st.file_uploader("Upload Base Image (jpg/png)", type=["jpg", "jpeg", "png"])
 
-st.markdown("### Activate Logos")
+# Logo upload or load
 use_logo1 = st.checkbox("Activate Logo: Made in Germany", value=True)
 use_logo2 = st.checkbox("Activate Logo: DHL Logo", value=True)
 
@@ -117,29 +104,10 @@ logos_to_add = [logo for logo in [logo1, logo2] if logo is not None]
 
 if uploaded_image:
     img = Image.open(uploaded_image)
-    resized_img = resize_image_to_min(img, 1600)
-
-    # Calculate max offsets for cropping 1600x1600 square inside resized_img
-    max_x = max(0, resized_img.width - 1600)
-    max_y = max(0, resized_img.height - 1600)
-
-    if max_x > 0:
-        x_offset = st.slider("Horizontal crop offset (X)", 0, max_x, max_x // 2)
-    else:
-        x_offset = 0
-        st.write("Horizontal crop offset not available (image width <= crop size)")
-
-    if max_y > 0:
-        y_offset = st.slider("Vertical crop offset (Y)", 0, max_y, max_y // 2)
-    else:
-        y_offset = 0
-        st.write("Vertical crop offset not available (image height <= crop size)")
-
-    cropped_img = crop_image(resized_img, 1600, x_offset, y_offset)
-
-    # Continue your logo and text UI here, also indented properly...
-
-
+    
+    # Use st_cropper for draggable crop box
+    cropped_img = st_cropper(img, realtime_update=True, box_color="#FF0000", aspect_ratio=1, box_radius=10)
+    
     # Logo options
     logo_position = st.selectbox("Logo position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
     logo_scale = st.slider("Logo size (% of image width)", 5, 50, 20) / 100
@@ -195,10 +163,10 @@ if uploaded_image:
     st.markdown("### Preview")
     st.image(result_img, use_container_width=True)
 
+    # Download button
     buf = io.BytesIO()
     result_img.convert("RGB").save(buf, format="JPEG")
     buf.seek(0)
-
     st.download_button("💾 Download Image with Logo and Text", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
 
 else:
