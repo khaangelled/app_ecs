@@ -145,9 +145,9 @@ if uploaded_image and uploaded_logo:
     right_bold = st.checkbox("Bold Right Text", value=False)
 
     left_font_size = st.slider("Left Font Size (px)", min_value=10, max_value=200, value=60)
-    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=48)
+    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=50)
 
-    line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 20) / 100
+    line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 7) / 100
 
     top_margin_in_line = 10  # fixed 10 px from top of line for text
 
