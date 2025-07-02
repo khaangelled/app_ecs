@@ -134,13 +134,11 @@ with st.sidebar:
 
     line_height_pct = st.slider("Bottom Line Height %", 5, 30, 7) / 100
 
-col1, col2, col3 = st.columns([1, 2, 2])  # Left options, middle uploader, right preview
+col1, col2 = st.columns([1, 2])  # Left options, middle uploader, right preview
+
+
 
 with col1:
-    st.write("## Options")
-    st.write("Use sidebar for all options.")
-
-with col2:
     st.write("## Upload Base Image (jpg/png)")
     uploaded_image = st.file_uploader("", type=["jpg", "jpeg", "png"], key="uploader")
 
@@ -154,7 +152,7 @@ with col2:
     else:
         image = None
 
-with col3:
+with col2:
     if uploaded_image and image:
         resized_image = resize_and_crop(image, 1600)
 
