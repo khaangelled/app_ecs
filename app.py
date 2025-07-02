@@ -2,18 +2,20 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import io
 
-def resize_and_crop(image, size=1600):
+def manual_crop(image, size=1600, x_offset=0, y_offset=0):
+    # Resize image first so that smallest side is at least size
     ratio = max(size / image.width, size / image.height)
     new_width = int(image.width * ratio)
     new_height = int(image.height * ratio)
     resized = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-    left = (new_width - size) // 2
-    top = (new_height - size) // 2
-    right = left + size
-    bottom = top + size
+    # Clamp offsets so crop box stays inside resized image
+    max_x = new_width - size
+    max_y = new_height - size
+    x_offset = min(max(x_offset, 0), max_x)
+    y_offset = min(max(y_offset, 0), max_y)
 
-    cropped = resized.crop((left, top, right, bottom))
+    cropped = resized.crop((x_offset, y_offset, x_offset + size, y_offset + size))
     return cropped
 
 def add_logos_to_image(base_image, logos, logo_scale=0.3, position="top-left", margin=20, line_height_px=0):
@@ -101,19 +103,12 @@ def draw_split_line_with_text(image,
 
     return image
 
-
 # --- Streamlit UI ---
 
-st.title("🖼️ Image with Split Bottom Line and Side Texts (Preset Line Colors)")
+st.title("🖼️ Manual Crop + Logos + Bottom Text Line")
 
-# Upload base image
-st.markdown("<h2 style='font-weight:bold; font-size:24px;'>Upload Base Image (jpg/png)</h2>", unsafe_allow_html=True)
-uploaded_image = st.file_uploader("", type=["jpg", "jpeg", "png"])
+uploaded_image = st.file_uploader("Upload your base image (jpg/png)", type=["jpg", "jpeg", "png"])
 
-# Logo Section Header (bold & big)
-st.markdown("<h2 style='font-weight:bold; font-size:24px;'>Activate or deactivate logos below:</h2>", unsafe_allow_html=True)
-
-# Load logos from local folder and toggle activation
 use_logo1 = st.checkbox("Activate Logo: Made in Germany", value=True)
 use_logo2 = st.checkbox("Activate Logo: DHL Logo", value=True)
 
@@ -136,13 +131,29 @@ logos_to_add = [logo for logo in [logo1, logo2] if logo is not None]
 if uploaded_image:
     image = Image.open(uploaded_image)
 
-    # Let user preview original image size
     st.markdown(f"**Original image size:** {image.width} x {image.height}")
 
-    # Resize and crop to 1600x1600
-    resized_image = resize_and_crop(image, 1600)
+    crop_size = 1600
 
-    st.markdown(f"**Resized and cropped image size:** {resized_image.width} x {resized_image.height}")
+    # First resize ratio to get large enough image for cropping
+    ratio = max(crop_size / image.width, crop_size / image.height)
+    new_width = int(image.width * ratio)
+    new_height = int(image.height * ratio)
+
+    # Show resized size info
+    st.markdown(f"**Image will be resized to:** {new_width} x {new_height}")
+
+    # Crop offset sliders
+    max_x = new_width - crop_size
+    max_y = new_height - crop_size
+
+    x_offset = st.slider("Horizontal crop offset (X)", 0, max_x, max_x // 2)
+    y_offset = st.slider("Vertical crop offset (Y)", 0, max_y, max_y // 2)
+
+    # Perform manual crop
+    cropped_img = manual_crop(image, size=crop_size, x_offset=x_offset, y_offset=y_offset)
+
+    st.image(cropped_img, caption="Cropped Preview", use_container_width=True)
 
     # Logo options
     logo_position = st.selectbox("Logo position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
@@ -157,7 +168,6 @@ if uploaded_image:
     left_text_color = st.color_picker("Left Text Color", "#FFFFFF")
     right_text_color = st.color_picker("Right Text Color", "#FFFFFF")
 
-    # Preset line color options (name, (left_bg, right_bg))
     color_presets = {
         "Green & Geige": ("#52796f", "#a68a64"),
         "Red & Yellow": ("#d62828", "#fcbf49"),
@@ -167,24 +177,22 @@ if uploaded_image:
     }
 
     preset_name = st.selectbox("Choose bottom line color preset", list(color_presets.keys()))
-
     left_bg_color, right_bg_color = color_presets[preset_name]
 
     left_bold = st.checkbox("Bold Left Text", value=True)
     right_bold = st.checkbox("Bold Right Text", value=False)
 
-    left_font_size = st.slider("Left Font Size (px)", min_value=10, max_value=200, value=60)
-    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=50)
+    left_font_size = st.slider("Left Font Size (px)", 10, 200, 60)
+    right_font_size = st.slider("Right Font Size (px)", 10, 200, 50)
 
     line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 7) / 100
-    line_height_px = int(resized_image.height * line_height_pct)
+    line_height_px = int(cropped_img.height * line_height_pct)
+    top_margin_in_line = 10
 
-    top_margin_in_line = 10  # fixed 10 px from top of line for text
+    # Add logos
+    result = add_logos_to_image(cropped_img, logos_to_add, logo_scale=logo_scale, position=logo_position, margin=20, line_height_px=line_height_px)
 
-    # Add logos stacked with respect to line height if bottom positioned
-    result = add_logos_to_image(resized_image, logos_to_add, logo_scale=logo_scale, position=logo_position, margin=20, line_height_px=line_height_px)
-
-    # Draw bottom line with text
+    # Draw bottom line + text
     result = draw_split_line_with_text(
         result,
         left_text=left_text,
@@ -202,13 +210,13 @@ if uploaded_image:
         is_bold_right=right_bold,
     )
 
-    st.markdown("### Preview")
+    st.markdown("### Final Preview")
     st.image(result, use_container_width=True)
 
+    # Download button
     buf = io.BytesIO()
     result.convert("RGB").save(buf, format="JPEG")
     buf.seek(0)
-
     st.download_button("💾 Download Image with Logo and Text", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
 
 else:
