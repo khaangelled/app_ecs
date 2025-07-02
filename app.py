@@ -120,24 +120,25 @@ if uploaded_image:
     resized_img = resize_image_to_min(img, 1600)
 
     # Calculate max offsets for cropping 1600x1600 square inside resized_img
-max_x = max(0, resized_img.width - 1600)
-max_y = max(0, resized_img.height - 1600)
+    max_x = max(0, resized_img.width - 1600)
+    max_y = max(0, resized_img.height - 1600)
 
-if max_x > 0:
-    x_offset = st.slider("Horizontal crop offset (X)", 0, max_x, max_x // 2)
-else:
-    x_offset = 0
-    st.write("Horizontal crop offset not available (image width <= crop size)")
+    if max_x > 0:
+        x_offset = st.slider("Horizontal crop offset (X)", 0, max_x, max_x // 2)
+    else:
+        x_offset = 0
+        st.write("Horizontal crop offset not available (image width <= crop size)")
 
-if max_y > 0:
-    y_offset = st.slider("Vertical crop offset (Y)", 0, max_y, max_y // 2)
-else:
-    y_offset = 0
-    st.write("Vertical crop offset not available (image height <= crop size)")
-
-
+    if max_y > 0:
+        y_offset = st.slider("Vertical crop offset (Y)", 0, max_y, max_y // 2)
+    else:
+        y_offset = 0
+        st.write("Vertical crop offset not available (image height <= crop size)")
 
     cropped_img = crop_image(resized_img, 1600, x_offset, y_offset)
+
+    # Continue your logo and text UI here, also indented properly...
+
 
     # Logo options
     logo_position = st.selectbox("Logo position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
