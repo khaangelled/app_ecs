@@ -136,10 +136,10 @@ if uploaded_image and uploaded_logo:
 
     # Font size in pixels
     left_font_size = st.slider("Left Font Size (px)", min_value=10, max_value=200, value=60)
-    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=48)
+    right_font_size = st.slider("Right Font Size (px)", min_value=10, max_value=200, value=50)
 
     # Default line height is 20%
-    line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 20) / 100
+    line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 7) / 100
 
     # Fixed 10 px margin from top of line for text vertical position:
     top_margin_in_line = 10
