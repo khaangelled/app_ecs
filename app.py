@@ -109,12 +109,13 @@ with st.sidebar:
         except FileNotFoundError:
             st.error("Logo 'ECS.png' not found.")
 
-    # logos_to_add except ECS keep original logo_position
-    # ECS logo always bottom-left above line, so add separately if active
     logos_main = [logo for logo in [logo1, logo2] if logo is not None]
-    
-    logo_position = st.selectbox("Logo Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
-    logo_scale = st.slider("Logo Size %", 5, 50, 20)
+
+    logo_position = st.selectbox("Main Logos Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
+    logo_scale = st.slider("Main Logos Size %", 5, 50, 20)
+
+    ecs_logo_position = st.selectbox("ECS Logo Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=3)
+    ecs_logo_scale = st.slider("ECS Logo Size %", 5, 50, 20)
 
     left_text = st.text_input("Left Text (left half)", "Awesome Product")
     right_text = st.text_input("Right Text (right half)", "Details or subtitle here")
@@ -141,6 +142,7 @@ with st.sidebar:
 
     line_height_pct = st.slider("Bottom Line Height %", 5, 30, 7) / 100
 
+
 col1, col2 = st.columns([1, 2])
 
 with col1:
@@ -163,13 +165,13 @@ with col2:
         line_height_px = int(resized_image.height * line_height_pct)
         top_margin_in_line = 10
 
-        # Add main logos at chosen position
+        # Add main logos
         result = add_logos_to_image(resized_image, logos_main, logo_scale=logo_scale/100, position=logo_position, margin=20, line_height_px=line_height_px)
         
-        # Add ECS logo separately at bottom-left always above line
+        # Add ECS logo separately
         if logo_ecs:
-            result = add_logos_to_image(result, [logo_ecs], logo_scale=logo_scale/100, position="bottom-left", margin=20, line_height_px=line_height_px)
-        
+            result = add_logos_to_image(result, [logo_ecs], logo_scale=ecs_logo_scale/100, position=ecs_logo_position, margin=20, line_height_px=line_height_px)
+
         # Draw bottom split line with texts
         result = draw_split_line_with_text(
             result,
