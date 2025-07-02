@@ -1,7 +1,6 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import io
-import base64
 
 st.set_page_config(layout="wide")  # Use full browser width
 
@@ -17,36 +16,36 @@ def resize_and_crop(image, size=1600):
     cropped = resized.crop((left, top, right, bottom))
     return cropped
 
-def add_logos_to_image(base_image, logos, logo_scale=0.3, position="top-left", margin=20, line_height_px=0):
+def add_logos_to_image(base_image, logos_with_positions, logo_scale=0.3, margin=20, line_height_px=0):
     base = base_image.convert("RGBA")
-    logo_imgs = []
-    positions = []
-
-    for logo_info in logos:
-        logo, pos = logo_info
+    
+    for logo, position in logos_with_positions:
         logo_w = int(base.width * logo_scale)
         logo_h = int(logo.height * (logo_w / logo.width))
         resized_logo = logo.resize((logo_w, logo_h), Image.Resampling.LANCZOS)
-        logo_imgs.append(resized_logo)
-        positions.append(pos)
-
-    # We'll paste logos individually at their positions
-    for resized_logo, pos in zip(logo_imgs, positions):
-        if pos in ["bottom-left", "bottom-right"]:
+        
+        # Calculate x, y based on position
+        if position in ["bottom-left", "bottom-right"]:
             y = base.height - line_height_px - resized_logo.height - margin
-        elif pos == "center":
+        elif position == "center":
             y = (base.height - resized_logo.height) // 2
-        else:
+        else:  # top positions
             y = margin
 
-        if pos in ["top-left", "bottom-left"]:
+        if position in ["top-left", "bottom-left"]:
             x = margin
-        elif pos in ["top-right", "bottom-right"]:
+        elif position in ["top-right", "bottom-right"]:
             x = base.width - resized_logo.width - margin
         else:
             x = (base.width - resized_logo.width) // 2
 
-        base.paste(resized_logo, (x, y), mask=resized_logo)
+        # Use alpha channel as mask if present
+        if resized_logo.mode == "RGBA":
+            mask = resized_logo.split()[-1]
+        else:
+            mask = None
+
+        base.paste(resized_logo, (x, y), mask=mask)
 
     return base
 
@@ -87,17 +86,18 @@ def draw_split_line_with_text(image,
 
 st.title("🖼️ Image with Split Bottom Line and Side Texts (Preset Line Colors)")
 
+uploaded_image = st.file_uploader("Upload Base Image (jpg/png)", type=["jpg", "jpeg", "png"])
+
 with st.sidebar:
     st.header("Options")
 
     use_logo1 = st.checkbox("Activate Logo: Made in Germany", value=True)
     use_logo2 = st.checkbox("Activate Logo: DHL Logo", value=True)
-    use_logo3 = st.checkbox("Activate Logo: ECS", value=True)  # New checkbox for ECS logo
+    use_logo3 = st.checkbox("Activate Logo: ECS Logo", value=True)
 
     logo1 = None
     logo2 = None
     logo3 = None
-
     if use_logo1:
         try:
             logo1 = Image.open("made_in_germany.png")
@@ -114,16 +114,8 @@ with st.sidebar:
         except FileNotFoundError:
             st.error("Logo 'ECS.png' not found.")
 
-    # Collect logos as tuples (logo_image, position)
-    # Default position for ECS logo = bottom-left (above line)
-    logos_to_add = []
-    if logo1:
-        logos_to_add.append((logo1, "top-left"))  # You can keep old defaults or add option for position too if wanted
-    if logo2:
-        logos_to_add.append((logo2, "top-right"))
-    if logo3:
-        logos_to_add.append((logo3, "bottom-left"))
-
+    # Logo positions:
+    logo_position = st.selectbox("Logo Position (Made in Germany & DHL)", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=0)
     logo_scale = st.slider("Logo Size %", 5, 50, 20)
 
     left_text = st.text_input("Left Text (left half)", "Awesome Product")
@@ -151,12 +143,10 @@ with st.sidebar:
 
     line_height_pct = st.slider("Bottom Line Height %", 5, 30, 7) / 100
 
-
+# Layout: three columns - left for options + uploader, right for preview
 col1, col2 = st.columns([1, 2])
 
 with col1:
-    uploaded_image = st.file_uploader("Upload Base Image (jpg/png)", type=["jpg", "jpeg", "png"])
-
     if uploaded_image:
         image = Image.open(uploaded_image)
         if image.width != image.height:
@@ -164,8 +154,6 @@ with col1:
                 "⚠️ Image is not square (1:1 ratio). It will be center-cropped automatically to 1600×1600 pixels."
                 " Or crop manually here: https://iloveimg.app/crop-image"
             )
-    else:
-        st.info("Please upload a base image to get started.")
 
 with col2:
     if uploaded_image:
@@ -174,7 +162,17 @@ with col2:
         line_height_px = int(resized_image.height * line_height_pct)
         top_margin_in_line = 10
 
-        result = add_logos_to_image(resized_image, logos_to_add, logo_scale=logo_scale/100, position=None, margin=20, line_height_px=line_height_px)
+        # Prepare logos list with positions
+        logos_with_positions = []
+        if logo1 is not None:
+            logos_with_positions.append((logo1, logo_position))
+        if logo2 is not None:
+            logos_with_positions.append((logo2, logo_position))
+        if logo3 is not None:
+            # ECS logo is always bottom-left by default
+            logos_with_positions.append((logo3, "bottom-left"))
+
+        result = add_logos_to_image(resized_image, logos_with_positions, logo_scale=logo_scale/100, margin=20, line_height_px=line_height_px)
         result = draw_split_line_with_text(
             result,
             left_text=left_text,
@@ -192,29 +190,13 @@ with col2:
             is_bold_right=right_bold,
         )
 
-        buf = io.BytesIO()
-        result.save(buf, format="PNG")
-        buf.seek(0)
-        img_bytes = buf.read()
-        img_b64 = base64.b64encode(img_bytes).decode()
-
         st.markdown("## Preview")
+        st.image(result, use_container_width=True)
 
-        st.markdown(
-            f"""
-            <div style="text-align:center;">
-                <img
-                    src="data:image/png;base64,{img_b64}"
-                    style="max-width:40%; height:auto; cursor:pointer;"
-                    onclick="window.open(this.src)"
-                    alt="Preview Image"
-                />
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        buf = io.BytesIO()
+        result.convert("RGB").save(buf, format="JPEG")
+        buf.seek(0)
+        st.download_button("💾 Download Image", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
 
-        buf2 = io.BytesIO()
-        result.convert("RGB").save(buf2, format="JPEG")
-        buf2.seek(0)
-        st.download_button("💾 Download Image", data=buf2, file_name="image_with_text.jpg", mime="image/jpeg")
+    else:
+        st.info("Please upload a base image to get started.")
