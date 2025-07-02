@@ -1,6 +1,7 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import io
+import os
 
 def resize_and_crop(image, size=1600):
     ratio = max(size / image.width, size / image.height)
@@ -16,28 +17,51 @@ def resize_and_crop(image, size=1600):
     cropped = resized.crop((left, top, right, bottom))
     return cropped
 
-def add_logo_to_image(base_image, logo_image, logo_scale=0.3, position="top-left", margin=10):
+def add_logos_to_image(base_image, logos, logo_scale=0.15, position="top-left", margin=10, line_height_px=100):
+    """
+    logos: list of PIL Images (already loaded)
+    logo_scale: size relative to image width
+    position: where to place logos (top-left, top-right, bottom-left, bottom-right, center)
+    margin: margin from edges
+    line_height_px: the height of the bottom line in pixels, used for vertical adjustment
+    """
     base = base_image.convert("RGBA")
-    logo = logo_image.convert("RGBA")
 
-    logo_width = int(base.width * logo_scale)
-    logo_height = int(logo.height * (logo_width / logo.width))
-    logo = logo.resize((logo_width, logo_height), Image.Resampling.LANCZOS)
+    logo_imgs = []
+    for logo in logos:
+        logo_width = int(base.width * logo_scale)
+        logo_height = int(logo.height * (logo_width / logo.width))
+        resized_logo = logo.resize((logo_width, logo_height), Image.Resampling.LANCZOS)
+        logo_imgs.append(resized_logo)
+
+    # Calculate total height of stacked logos + spacing (5 px between logos)
+    total_height = sum(logo.height for logo in logo_imgs) + (len(logo_imgs) - 1) * 5
 
     if position == "top-left":
-        pos = (margin, margin)
+        x = margin
+        y = margin
     elif position == "top-right":
-        pos = (base.width - logo.width - margin, margin)
+        x = base.width - max(logo.width for logo in logo_imgs) - margin
+        y = margin
     elif position == "bottom-left":
-        pos = (margin, base.height - logo.height - margin)
+        # place logos stacked above the bottom line (line_height_px + margin from bottom)
+        x = margin
+        y = base.height - line_height_px - total_height - margin
     elif position == "bottom-right":
-        pos = (base.width - logo.width - margin, base.height - logo.height - margin)
+        x = base.width - max(logo.width for logo in logo_imgs) - margin
+        y = base.height - line_height_px - total_height - margin
     elif position == "center":
-        pos = ((base.width - logo.width) // 2, (base.height - logo.height) // 2)
+        x = (base.width - max(logo.width for logo in logo_imgs)) // 2
+        y = (base.height - total_height) // 2
     else:
-        pos = (base.width - logo.width - margin, base.height - logo.height - margin)
+        x = margin
+        y = margin
 
-    base.paste(logo, pos, mask=logo)
+    # Paste logos stacked vertically
+    for logo in logo_imgs:
+        base.paste(logo, (x, y), mask=logo)
+        y += logo.height + 5  # 5 px spacing between logos
+
     return base
 
 def draw_split_line_with_text(image,
@@ -76,43 +100,59 @@ def draw_split_line_with_text(image,
         left_font = ImageFont.load_default()
         right_font = ImageFont.load_default()
 
-    # Text vertical position with fixed margin from top of line
     y_text_left = y_start + top_margin_in_line
     y_text_right = y_start + top_margin_in_line
 
-    # Text X positions:
     x_text_left = margin  # left text starts margin from left edge
     x_text_right = width // 2 + margin  # right text starts margin from center
 
-    # Draw texts (no background on text itself)
     draw.text((x_text_left, y_text_left), left_text, font=left_font, fill=left_text_color)
     draw.text((x_text_right, y_text_right), right_text, font=right_font, fill=right_text_color)
 
-    return image
+    return image, line_height
 
-st.title("🖼️ Image with Logo and Split Bottom Line Text")
+# ---------------- Streamlit app -------------------
 
-# Checkboxes to activate/deactivate logo and text BEFORE upload
-enable_logo = st.checkbox("Add Logo", value=True)
-enable_text = st.checkbox("Add Bottom Text Line", value=True)
+st.title("🖼️ Image with Logos & Bottom Text Line")
 
-# Upload files
+# Logo active/deactive
+enable_logo_made = st.checkbox("Show 'Made in Germany' logo", value=True)
+enable_logo_dhl = st.checkbox("Show 'DHL' logo", value=True)
+
+# Base image uploader
 uploaded_image = st.file_uploader("Upload base image (jpg/png)", type=["jpg","jpeg","png"])
-uploaded_logo = st.file_uploader("Upload logo image (PNG with transparency)", type=["png"]) if enable_logo else None
 
 if uploaded_image:
     image = Image.open(uploaded_image)
     resized_image = resize_and_crop(image, 1600)
     result = resized_image.convert("RGBA")
 
-    # Add logo if enabled and uploaded
-    if enable_logo and uploaded_logo:
-        logo = Image.open(uploaded_logo)
-        position = st.selectbox("Logo position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=2)
-        logo_scale = st.slider("Logo size (% of image width)", 5, 50, 30) / 100
-        result = add_logo_to_image(result, logo, logo_scale=logo_scale, position=position)
+    # Load fixed logos from local folder (must be in same folder as this script)
+    # Provide relative path or absolute path if needed
+    logos_folder = "."  # current folder
+    logos_to_add = []
 
-    # Add bottom text line if enabled
+    if enable_logo_made:
+        made_path = os.path.join(logos_folder, "made_in_germany.png")
+        if os.path.isfile(made_path):
+            logos_to_add.append(Image.open(made_path))
+        else:
+            st.warning("'made_in_germany.png' not found in folder.")
+
+    if enable_logo_dhl:
+        dhl_path = os.path.join(logos_folder, "dhl.png")
+        if os.path.isfile(dhl_path):
+            logos_to_add.append(Image.open(dhl_path))
+        else:
+            st.warning("'dhl.png' not found in folder.")
+
+    # Logo position choice
+    logo_position = st.selectbox("Logos Position", ["top-left", "top-right", "bottom-left", "bottom-right", "center"], index=2)
+    logo_scale = st.slider("Logos size (% of image width)", 5, 50, 15) / 100  # smaller size default
+
+    # Draw bottom line text settings
+    enable_text = st.checkbox("Add Bottom Text Line", value=True)
+
     if enable_text:
         st.markdown("### Bottom split line with side texts")
 
@@ -141,32 +181,46 @@ if uploaded_image:
 
         line_height_pct = st.slider("Bottom line height (% of image height)", 5, 30, 7) / 100
 
-        top_margin_in_line = 10  # fixed margin from top of line for text
+    else:
+        # Default values if text disabled (to calculate logo position)
+        left_text = right_text = ""
+        left_text_color = right_text_color = "#FFFFFF"
+        left_bg_color = right_bg_color = "#000000"
+        left_bold = right_bold = False
+        left_font_size = right_font_size = 20
+        line_height_pct = 0.07
 
-        result = draw_split_line_with_text(
-            result,
-            left_text=left_text,
-            right_text=right_text,
-            left_font_size=left_font_size,
-            right_font_size=right_font_size,
-            left_text_color=left_text_color,
-            right_text_color=right_text_color,
-            left_bg_color=left_bg_color,
-            right_bg_color=right_bg_color,
-            line_height_pct=line_height_pct,
-            margin=20,
-            top_margin_in_line=top_margin_in_line,
-            is_bold_left=left_bold,
-            is_bold_right=right_bold,
-        )
+    # First draw bottom line with text (if enabled)
+    result, line_height_px = draw_split_line_with_text(
+        result,
+        left_text=left_text,
+        right_text=right_text,
+        left_font_size=left_font_size,
+        right_font_size=right_font_size,
+        left_text_color=left_text_color,
+        right_text_color=right_text_color,
+        left_bg_color=left_bg_color,
+        right_bg_color=right_bg_color,
+        line_height_pct=line_height_pct,
+        margin=20,
+        top_margin_in_line=10,
+        is_bold_left=left_bold,
+        is_bold_right=right_bold,
+    )
+
+    # Then add logos if any enabled
+    if logos_to_add:
+        result = add_logos_to_image(result, logos_to_add, logo_scale=logo_scale, position=logo_position, margin=20, line_height_px=line_height_px)
 
     st.markdown("### Preview")
     st.image(result, use_container_width=True)
 
+    # Download button
     buf = io.BytesIO()
     result.convert("RGB").save(buf, format="JPEG")
     buf.seek(0)
 
     st.download_button("💾 Download Image with Logo and Text", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
+
 else:
     st.info("Upload an image to see options and preview.")
