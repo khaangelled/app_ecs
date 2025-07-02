@@ -176,7 +176,7 @@ with col2:
             <style>
             .stImage > img {
                 max-width: 25% !important;
-                height: 25% !important;
+
                 display: block;
                 margin-left: auto;
                 margin-right: auto;
