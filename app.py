@@ -82,13 +82,11 @@ def draw_split_line_with_text(image,
 
 st.title("🖼️ Image with Split Bottom Line and Side Texts (Preset Line Colors)")
 
-# Create two columns: left for controls, right for preview
-col_left, col_right = st.columns(2)
+uploaded_image = st.file_uploader("Upload Base Image (jpg/png)", type=["jpg", "jpeg", "png"])
 
-with col_left:
-    st.header("Upload and Options")
-
-    uploaded_image = st.file_uploader("Upload Base Image (jpg/png)", type=["jpg", "jpeg", "png"])
+# Put all controls in a sidebar or a narrow container
+with st.sidebar:
+    st.header("Options")
 
     use_logo1 = st.checkbox("Activate Logo: Made in Germany", value=True)
     use_logo2 = st.checkbox("Activate Logo: DHL Logo", value=True)
@@ -136,44 +134,56 @@ with col_left:
 
     line_height_pct = st.slider("Bottom Line Height %", 5, 30, 7) / 100
 
-with col_right:
-    st.header("Preview")
+if uploaded_image:
+    image = Image.open(uploaded_image)
+    
+    # Show uploaded file info smaller
+    uploaded_file_info = f"""
+    <div style="font-size:0.8rem; color:gray; margin-top:5px;">
+        {uploaded_image.name} ({round(uploaded_image.size / 1024 / 1024, 2)} MB)
+    </div>
+    """
+    st.markdown(uploaded_file_info, unsafe_allow_html=True)
+    
+    if image.width != image.height:
+        warning_html = """
+        <div style="font-size:0.8rem; color:#d9534f; margin-top:5px;">
+            ⚠️ Image is not square (1:1 ratio). It will be center-cropped automatically to 1600×1600 pixels.
+            Or crop manually here: <a href='https://iloveimg.app/crop-image' target='_blank'>https://iloveimg.app/crop-image</a>
+        </div>
+        """
+        st.markdown(warning_html, unsafe_allow_html=True)
 
-    if uploaded_image:
-        image = Image.open(uploaded_image)
-        if image.width != image.height:
-            st.warning(
-                "⚠️ Image is not square (1:1 ratio). It will be center-cropped automatically to 1600×1600 pixels."
-                " Or crop manually here: https://iloveimg.app/crop-image"
-            )
-        resized_image = resize_and_crop(image, 1600)
+    resized_image = resize_and_crop(image, 1600)
 
-        line_height_px = int(resized_image.height * line_height_pct)
-        top_margin_in_line = 10
+    line_height_px = int(resized_image.height * line_height_pct)
+    top_margin_in_line = 10
 
-        result = add_logos_to_image(resized_image, logos_to_add, logo_scale=logo_scale/100, position=logo_position, margin=20, line_height_px=line_height_px)
-        result = draw_split_line_with_text(
-            result,
-            left_text=left_text,
-            right_text=right_text,
-            left_font_size=left_font_size,
-            right_font_size=right_font_size,
-            left_text_color=left_text_color,
-            right_text_color=right_text_color,
-            left_bg_color=left_bg_color,
-            right_bg_color=right_bg_color,
-            line_height_pct=line_height_pct,
-            margin=20,
-            top_margin_in_line=top_margin_in_line,
-            is_bold_left=left_bold,
-            is_bold_right=right_bold,
-        )
+    result = add_logos_to_image(resized_image, logos_to_add, logo_scale=logo_scale/100, position=logo_position, margin=20, line_height_px=line_height_px)
+    result = draw_split_line_with_text(
+        result,
+        left_text=left_text,
+        right_text=right_text,
+        left_font_size=left_font_size,
+        right_font_size=right_font_size,
+        left_text_color=left_text_color,
+        right_text_color=right_text_color,
+        left_bg_color=left_bg_color,
+        right_bg_color=right_bg_color,
+        line_height_pct=line_height_pct,
+        margin=20,
+        top_margin_in_line=top_margin_in_line,
+        is_bold_left=left_bold,
+        is_bold_right=right_bold,
+    )
 
-        st.image(result, use_container_width=True)
+    st.markdown("## Preview")
+    st.image(result, use_column_width=True)
 
-        buf = io.BytesIO()
-        result.convert("RGB").save(buf, format="JPEG")
-        buf.seek(0)
-        st.download_button("💾 Download Image", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
-    else:
-        st.info("Please upload a base image to get started.")
+    buf = io.BytesIO()
+    result.convert("RGB").save(buf, format="JPEG")
+    buf.seek(0)
+    st.download_button("💾 Download Image", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
+
+else:
+    st.info("Please upload a base image to get started.")
