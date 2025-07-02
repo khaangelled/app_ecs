@@ -164,8 +164,14 @@ if uploaded_image:
         is_bold_right=right_bold,
     )
 
-    st.markdown("## Preview")
+st.markdown("## Preview")
+
+col1, col2, col3, col4 = st.columns([1, 3, 1, 5])  
+# 1 + 3 + 1 + 5 = 10 parts in total; col2 is 3/10 = 30% approx
+
+with col2:
     st.image(result, use_column_width=True)
+
 
     buf = io.BytesIO()
     result.convert("RGB").save(buf, format="JPEG")
