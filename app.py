@@ -209,4 +209,7 @@ if uploaded_image:
     result.convert("RGB").save(buf, format="JPEG")
     buf.seek(0)
 
-    st.download_button("💾 Download Image with Logo and Text", data=buf, file_name="
+    st.download_button("💾 Download Image with Logo and Text", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
+
+else:
+    st.info("Please upload a base image to get started.")
