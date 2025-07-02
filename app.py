@@ -80,9 +80,11 @@ def draw_split_line_with_text(image,
     draw.text((x_text_right, y_text_right), right_text, font=right_font, fill=right_text_color)
     return image
 
-st.title("🖼️ Image with Split Bottom Line and Side Texts (Preset Line Colors)")
+st.title("🖼️ Ebay Image")
 
-# Sidebar for options and upload
+uploaded_image = st.file_uploader("Upload Base Image (jpg/png)", type=["jpg", "jpeg", "png"])
+
+# Sidebar options
 with st.sidebar:
     st.header("Options")
 
@@ -132,12 +134,15 @@ with st.sidebar:
 
     line_height_pct = st.slider("Bottom Line Height %", 5, 30, 7) / 100
 
-# Middle column for upload & messages
-col1, col2, col3 = st.columns([3, 4, 3])
+col1, col2, col3 = st.columns([1, 2, 2])  # Left options, middle uploader, right preview
 
 with col1:
-    st.header("Upload Image")
-    uploaded_image = st.file_uploader("Upload Base Image (jpg/png)", type=["jpg", "jpeg", "png"])
+    st.write("## Options")
+    st.write("Use sidebar for all options.")
+
+with col2:
+    st.write("## Upload Base Image (jpg/png)")
+    uploaded_image = st.file_uploader("", type=["jpg", "jpeg", "png"], key="uploader")
 
     if uploaded_image:
         image = Image.open(uploaded_image)
@@ -149,38 +154,38 @@ with col1:
     else:
         image = None
 
-# Right column for preview and download
 with col3:
-   with col3:
     if uploaded_image and image:
-        # ... image processing ...
+        resized_image = resize_and_crop(image, 1600)
+
+        line_height_px = int(resized_image.height * line_height_pct)
+        top_margin_in_line = 10
+
+        result = add_logos_to_image(resized_image, logos_to_add, logo_scale=logo_scale / 100,
+                                    position=logo_position, margin=20, line_height_px=line_height_px)
+        result = draw_split_line_with_text(
+            result,
+            left_text=left_text,
+            right_text=right_text,
+            left_font_size=left_font_size,
+            right_font_size=right_font_size,
+            left_text_color=left_text_color,
+            right_text_color=right_text_color,
+            left_bg_color=left_bg_color,
+            right_bg_color=right_bg_color,
+            line_height_pct=line_height_pct,
+            margin=20,
+            top_margin_in_line=top_margin_in_line,
+            is_bold_left=left_bold,
+            is_bold_right=right_bold,
+        )
 
         st.markdown("## Preview")
-        st.image(result, width=400)  # Fixed width (adjust as needed)
+        st.image(result, width=400)  # fixed width for left alignment
 
         buf = io.BytesIO()
         result.convert("RGB").save(buf, format="JPEG")
         buf.seek(0)
-        st.download_button(
-            "💾 Download Image",
-            data=buf,
-            file_name="image_with_text.jpg",
-            mime="image/jpeg"
-        )
-
-
-
-        st.markdown("## Preview")
-        st.image(result, use_container_width=True)
-
-        buf = io.BytesIO()
-        result.convert("RGB").save(buf, format="JPEG")
-        buf.seek(0)
-        st.download_button(
-            "💾 Download Image",
-            data=buf,
-            file_name="image_with_text.jpg",
-            mime="image/jpeg"
-        )
+        st.download_button("💾 Download Image", data=buf, file_name="image_with_text.jpg", mime="image/jpeg")
     else:
         st.info("Please upload a base image to get started.")
