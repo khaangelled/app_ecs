@@ -3,6 +3,11 @@ from PIL import Image, ImageDraw, ImageFont
 import io
 
 def resize_and_crop(image, size=1600):
+    # If image already 1600x1600, return as is
+    if image.width == size and image.height == size:
+        return image
+
+    # Otherwise, resize and crop as before
     ratio = max(size / image.width, size / image.height)
     new_width = int(image.width * ratio)
     new_height = int(image.height * ratio)
@@ -45,12 +50,11 @@ def add_logos_to_image(base_image, logos, logo_scale=0.3, position="top-left", m
 
     y = y_start
     for logo in logo_imgs:
-        logo = logo.convert("RGBA")  # <--- Ensure alpha channel for mask
+        logo = logo.convert("RGBA")  # Ensure alpha channel for mask
         base.paste(logo, (x_pos, y), mask=logo)
         y += logo.height + margin
 
     return base
-
 
 def draw_split_line_with_text(image,
                               left_text, right_text,
