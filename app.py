@@ -203,7 +203,7 @@ with col2:
             <div style="text-align:center;">
                 <img
                     src="data:image/png;base64,{img_b64}"
-                    style="width:450; height:auto; cursor:pointer;"
+                    style="width:400; height:auto; cursor:pointer;"
                     onclick="window.open(this.src)"
                     alt="Preview Image"
                 />
